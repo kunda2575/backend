@@ -12,7 +12,7 @@ dotEnv.config();
 connectDB();
 
 const app = express();
-const port = process.env.port || 5000; // Default to 5000 if not set in .env
+const port = process.env.port; // Default to 5000 if not set in .env
 
 app.use(cors());
 app.use(express.json());
