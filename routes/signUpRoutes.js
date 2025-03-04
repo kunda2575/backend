@@ -90,4 +90,28 @@ router.post("/forgot-password", signUpController.forgotPassword);
  */
 router.post("/reset-password", signUpController.resetPassword);
 
+/**
+ * @swagger
+ * /user/allusers:
+ *   get:
+ *     summary: Get all users
+ *     description: Fetches a list of all registered users.
+ *     responses:
+ *       200:
+ *         description: List of users retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id: { type: string, example: "60c72b2f9b1d4c3d88b3b8e5" }
+ *                   fullName: { type: string, example: "John Doe" }
+ *                   userName: { type: string, example: "johndoe" }
+ *                   email: { type: string, example: "johndoe@example.com" }
+ *       500: { description: "Server error" }
+ */
+router.get("/allusers", signUpController.getUsers);
+
 module.exports = router;
