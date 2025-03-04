@@ -102,15 +102,5 @@ const resetPassword = async (req, res) => {
     }
 };
 
- const getUsers = async(req,res)=>{
-    try {
-        const users= await User.find()
-        res.json({users})
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ error: "Internal server error" });
-     
-    }
- }
 
-module.exports = {getUsers, userRegister, userLogin, forgotPassword, resetPassword };
+module.exports = { userRegister, userLogin, forgotPassword, resetPassword };
