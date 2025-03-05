@@ -5,11 +5,12 @@ const dotEnv = require("dotenv");
 const swaggerJsDoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 
-const connectDB = require("./config/db");
+const {connectDB,serverDb} = require("./config/db");
 const userRoutes = require("./routes/signUpRoutes");
 
 dotEnv.config();
-connectDB();
+// connectDB();
+serverDb();
 
 const app = express();
 const port = process.env.port; // Default to 5000 if not set in .env
