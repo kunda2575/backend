@@ -3,6 +3,56 @@ const signUpController = require("../controllers/signUpController");
 
 const router = express.Router();
 
+
+
+
+
+
+
+/**
+ * @swagger
+ * /user/send-otp:
+ *   post:
+ *     summary: Send OTP for email verification
+ *     description: Sends an OTP to the provided email for verification.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email: { type: string, example: "johndoe@example.com" }
+ *     responses:
+ *       200: { description: "OTP sent to email" }
+ *       400: { description: "Email already registered" }
+ */
+router.post("/send-otp",signUpController.sendOtp);
+
+
+
+
+/**
+ * @swagger
+ * /user/verify-otp:
+ *   post:
+ *     summary: Verify OTP
+ *     description: Verifies the provided OTP for email confirmation.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email: { type: string, example: "johndoe@example.com" }
+ *               otp: { type: string, example: "123456" }
+ *     responses:
+ *       200: { description: "OTP verified successfully" }
+ *       400: { description: "Invalid or expired OTP" }
+ */
+router.post("/verify-otp",signUpController.verifyOtp)
+
 /**
  * @swagger
  * /user/register:
@@ -54,7 +104,7 @@ router.post("/login", signUpController.userLogin);
  * /user/forgot-password:
  *   post:
  *     summary: Forgot Password
- *     description: Sends a password reset link to the user's email.
+ *     description: Sends a password reset OTP to the user's email.
  *     requestBody:
  *       required: true
  *       content:
@@ -64,7 +114,7 @@ router.post("/login", signUpController.userLogin);
  *             properties:
  *               email: { type: string, example: "johndoe@example.com" }
  *     responses:
- *       200: { description: "Password reset email sent" }
+ *       200: { description: "OTP sent to your email" }
  *       404: { description: "Email not found" }
  */
 router.post("/forgot-password", signUpController.forgotPassword);
@@ -74,7 +124,7 @@ router.post("/forgot-password", signUpController.forgotPassword);
  * /user/reset-password:
  *   post:
  *     summary: Reset Password
- *     description: Resets the user's password using a token.
+ *     description: Resets the user's password using an OTP.
  *     requestBody:
  *       required: true
  *       content:
@@ -82,11 +132,11 @@ router.post("/forgot-password", signUpController.forgotPassword);
  *           schema:
  *             type: object
  *             properties:
- *               token: { type: string, example: "reset-token-here" }
+ *               otp: { type: string, example: "123456" }
  *               newPassword: { type: string, example: "newpassword123" }
  *     responses:
  *       200: { description: "Password reset successfully" }
- *       400: { description: "Invalid token or password format" }
+ *       400: { description: "Invalid OTP or password format" }
  */
 router.post("/reset-password", signUpController.resetPassword);
 

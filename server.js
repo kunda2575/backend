@@ -1,49 +1,65 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const cors = require("cors");
-const dotEnv = require("dotenv");
-const swaggerJsDoc = require("swagger-jsdoc");
-const swaggerUi = require("swagger-ui-express");
+const dotenv = require("dotenv");
+const { sqlDb } = require("./config/db");
+const blocksRoutes = require('./routes/blockRoutes');
 
-const {connectDB,serverDb} = require("./config/db");
-const userRoutes = require("./routes/signUpRoutes");
-
-dotEnv.config();
-// connectDB();
-serverDb();
-
-const app = express();
-const port = process.env.port; // Default to 5000 if not set in .env
-
-app.use(cors());
-app.use(express.json());
-app.use(bodyParser.json());
-
-// Swagger Options
-const swaggerOptions = {
-    definition: {
-        openapi: "3.0.0",
-        info: {
-            title: "Real Estate API",
-            version: "1.0.0",
-            description: "API documentation for Real Estate application",
-        },
-        servers: [
-            {
-                url: `http://localhost:${port}`,
-            },
-        ],
-    },
-    apis: ["./routes/*.js"], // Ensure your route files have Swagger comments
-};
-
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+// Schemas
+const { leadStage } = require('./models/leadStageSchema');
+const { leadSource } = require('./models/leadSourceSchema');
+const { teamMember } = require('./models/teamMembersSchema');
+const { vendorMaster } = require('./models/vendorMasterSchema');
+const { materialMaster } = require('./models/materialMasterSchema');
+const { customerMaster } = require('./models/customerMasterSchema');
+const { userMaster } = require('./models/userMasterSchema');
+const { rolesMaster } = require('./models/rolesMasterSchema');
+const { builderMaster } = require('./models/builderMasterSchema');
+const { projectMaster } = require('./models/projectMasterSchema');
+const { blocksMaster } = require('./models/blocksMasterSchema');
+const { paymentModeMaster } = require('./models/paymentMoseMasterSchema');
+const { paymentTypeMaster } = require('./models/paymentTypeMasterSchema');
+const { unitType } = require('./models/unitTypeSchema');
+const { employeeMaster } = require('./models/employeeMasterSchema');
+const { expenseCategoryMaster } = require('./models/expenseCategoryMasterSchema');
+const { departmentMaster } = require('./models/departmentMasterSchema');
+const { lostReasons } = require('./models/lostReasonsSchema');
+const { bankMaster } = require('./models/bankMasterSchema');
+const { fundSource } = require('./models/fundSourceSchema');
+const { fundPurpose } = require('./models/fundPurposeSchema');
 
 // Routes
-app.use("/user", userRoutes);
+const userRoutes = require("./routes/signUpRoutes");
 
-app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
-    console.log(`Swagger Docs available at http://localhost:${port}/api-docs`);
-});
+dotenv.config();
+const app = express();
+const port = process.env.PORT || 5000;
+
+// ✅ Middleware
+app.use(cors({
+  origin: "http://localhost:5173", // Adjust based on your frontend URL
+  credentials: true               // Important for cookies/auth headers
+}));
+app.use(express.json());
+
+// ✅ Preflight requests handler (optional but helpful)
+app.options("*", cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
+
+// ✅ Connect to DB and Start Server Only If Successful
+sqlDb()
+  .then(() => {
+    // ✅ Routes
+    app.use("/user", userRoutes);
+    app.use('/api/blocks', blocksRoutes);
+
+    // ✅ Start Server
+    app.listen(port, () => {
+      console.log(`✅ Server running on http://localhost:${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ Server failed to start due to database error:", err);
+    process.exit(1);
+  });

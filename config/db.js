@@ -1,38 +1,45 @@
-const mongoose = require("mongoose");
+const { Sequelize } = require("sequelize");
 const dotenv = require("dotenv");
 
 dotenv.config();
 
-const mongo_url = process.env.MONGO_URL;
+// console.log("🔹 DB Config:", {
+//   DB_NAME: process.env.DB_NAME,
+//   DB_USER: process.env.DB_USER,
+//   DB_HOST: process.env.DB_HOST,
+// });
 
-const localDb = async () => {
-    try {
-        await mongoose.connect(mongo_url);
-        console.log("Database Connected Successfully");
-    } catch (error) {
-        console.error(`Error: ${error.message}`);
-        process.exit(1);
-    }
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASS,
+  {
+    host: process.env.DB_HOST,
+    dialect: "postgres",
+    logging: console.log, // ✅ Enables SQL query logging
+    pool: {
+      max: 10,
+      min: 0, // ✅ Set min to 0 to allow idle connections to close
+      acquire: 30000,
+      idle: 10000,
+    },
+  }
+);
+
+
+
+const sqlDb = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log("✅ Connected to PostgreSQL");
+
+    // ✅ Sync all models AFTER they are imported
+    await sequelize.sync({ alter: true });
+    console.log("✅ Tables are updated!");
+  } catch (err) {
+    console.error("❌ Database connection failed:", err);
+    process.exit(1);
+  }
 };
 
-const serverDb = () => {
-    try {
-        let username1 = encodeURIComponent("konetipraveen");
-        let password = encodeURIComponent(process.env.password);
-        let dbName = process.env.dbName;
-        console.log("username  = ",username1)
-        let url =`mongodb+srv://${username1}:${password}@cluster0.nnowk.mongodb.net/${dbName}?retryWrites=true&w=majority&appName=Cluster0`
-        console.log(url)
-        mongoose.connect(url)
-            .then(() => console.log("Mongodb Database is Connected"))
-            .catch(error => console.error("Error in Database Connection", error));
-
-        const db = mongoose.connection;
-
-        // Optionally, you can listen for errors
-        db.on("error", (error) => console.error("Database Error", error));
-    } catch (error) {
-
-    }
-}
-module.exports = { localDb,serverDb };
+module.exports = { sqlDb, sequelize };

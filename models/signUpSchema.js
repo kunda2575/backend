@@ -1,14 +1,64 @@
-const mongoose = require("mongoose");
+const { Sequelize, DataTypes } = require("sequelize");
+const { sequelize } = require("../config/db"); 
 
-const signUpSchema = new mongoose.Schema({
-    fullName: { type: String, required: true },
-    userName: { type: String, required: true },
-    mobileNumber: { type: Number, required: true },
-    email: { type: String, required: true, unique: true },
-    profile: { type: String, required: true },
-    password: { type: String, required: true },
-    resetPasswordToken: { type: String, default: null },
-    resetPasswordExpires: { type: Date, default: null }
-});
+const User = sequelize.define(
+  "User",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    fullname: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    username: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    mobilenumber: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    profile: {
+      type: DataTypes.STRING,
+      defaultValue: "default.jpg",
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    resetPasswordToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    resetPasswordExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.NOW,
+    },
+  },
+  {
+    tableName: "users",
+    timestamps: true, // ✅ Auto-generates createdAt & updatedAt
+  }
+);
 
-module.exports = mongoose.model("User", signUpSchema);
+module.exports = User;
