@@ -1,6 +1,6 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const blocksController = require('../controllers/blockController');
+const blocksController = require('../controllers/blockMasterController');
 
 router.post('/', blocksController.createBlock);
 router.get('/', blocksController.getBlocks);

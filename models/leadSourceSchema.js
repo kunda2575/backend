@@ -9,7 +9,7 @@ const leadSource = sequelize.define(
             autoIncrement: true,
             primaryKey: true
         },
-        lead_source:{
+        leadSource:{
             type:DataTypes.STRING,
             allowNUll:false
         }

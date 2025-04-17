@@ -3,7 +3,7 @@
 const {DataTypes}=require('sequelize')
 const {sequelize}=require('../config/db')
 
-const customerMaster = sequelize.define(
+const CustomerMaster = sequelize.define(
     'customer_master',{
        
         customerId:{
@@ -49,4 +49,4 @@ const customerMaster = sequelize.define(
     timestamps :true}
 )
 
-module.exports=customerMaster
+module.exports=CustomerMaster

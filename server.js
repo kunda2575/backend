@@ -2,7 +2,17 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { sqlDb } = require("./config/db");
+
+// masters
 const blocksRoutes = require('./routes/blockRoutes');
+const builderRoutes = require('./routes/builderRoutes');
+const bankRoutes = require('./routes/bankRoutes');
+const customerRoutes = require("./routes/customerRoutes");
+const departmentRoutes = require("./routes/departmentRoutes");
+const employeeRoutes = require('./routes/employeeRoutes');
+const expenseCategoryRoutes = require('./routes/expenseCategoryRoutes');
+const fundPurposeRoutes = require('./routes/fundPurposeRoutes');
+const fundSourceRoutes = require('./routes/fundSourceRoutes');
 
 // Schemas
 const { leadStage } = require('./models/leadStageSchema');
@@ -52,7 +62,17 @@ sqlDb()
   .then(() => {
     // ✅ Routes
     app.use("/user", userRoutes);
+
+    // masters
     app.use('/api/blocks', blocksRoutes);
+    app.use('/api/builders',builderRoutes);
+    app.use('/api/banks',bankRoutes);
+    app.use('/api/customers',customerRoutes);
+    app.use('/api/departments', departmentRoutes);
+    app.use('/api/employees',employeeRoutes);
+    app.use('/api/expenseCategorys',expenseCategoryRoutes);
+    app.use('/api/fundPurposes',fundPurposeRoutes);
+    app.use("/api/fundSources",fundSourceRoutes);
 
     // ✅ Start Server
     app.listen(port, () => {

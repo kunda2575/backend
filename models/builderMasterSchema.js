@@ -9,7 +9,7 @@ const builserMaster = sequelize.define(
             autoIncrement: true,
             primaryKey: true
         },
-        bilderMaster:{
+        builderMaster:{
             type:DataTypes.STRING,
             allowNull:false
         }
