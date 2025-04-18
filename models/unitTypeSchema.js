@@ -14,6 +14,10 @@ const unitType = sequelize.define(
         unit: {
             type: DataTypes.STRING,
             allowNull: false
+        },
+        userId:{
+            type:DataTypes.INTEGER,
+            allowNull:false
         }
     },
     {

@@ -4,9 +4,10 @@ const CustomerMaster =require('../models/customerMasterSchema');
 // create
 exports.createCustomerDetails = async (req,res) =>{
     try {
+            const userId = req.userId;
         const{customerName,customerPhone,customerEmail,customerAddress,customerProfession,languagesKnown,projectNameBlock,flatNo}=req.body
         const newCustomerDetails =await CustomerMaster.create({
-            customerName,customerPhone,customerEmail,customerAddress,customerProfession,languagesKnown,projectNameBlock,flatNo})
+            userId,customerName,customerPhone,customerEmail,customerAddress,customerProfession,languagesKnown,projectNameBlock,flatNo})
         res.status(201).json(newCustomerDetails)
 
     } catch (err) {
@@ -17,7 +18,8 @@ exports.createCustomerDetails = async (req,res) =>{
 // read
 exports.getCustomerDetails = async(req,res)=>{
  try {
-    const customerDetails = await CustomerMaster.findAll()
+        const userId = req.userId;
+    const customerDetails = await CustomerMaster.findAll({ where: { userId } })
     res.status(201).json(customerDetails)
  } catch (err) {
     res.status(500).json({ error: err.message });
@@ -26,10 +28,11 @@ exports.getCustomerDetails = async(req,res)=>{
 
 // update
 exports.updateCustomersDetails = async (req,res)=>{
-    try { 
+    try {
+            const userId = req.userId; 
         const{customerId}=req.params;
         const{customerName,customerPhone,customerEmail,customerAddress,customerProfession,languagesKnown,projectNameBlock,flatNo}=req.body
-       const customerDetails =  await CustomerMaster.findByPk(customerId)
+       const customerDetails =  await CustomerMaster.findOne({ where: {customerId, userId } })
        if(!customerDetails)
         return res.status(404).json({ error: "Customers not found" });
 
@@ -52,8 +55,9 @@ exports.updateCustomersDetails = async (req,res)=>{
 
 exports.deleteCustomersDetails = async(req,res)=>{
     try {
+            const userId = req.userId;
         const {customerId}=req.params;
-        const deleted = await CustomerMaster.destroy({where:{customerId}})
+        const deleted = await CustomerMaster.destroy({where:{customerId,userId}})
         if (!deleted) return res.status(404).json({ error: "Customer Details not found" });
         res.json({ message: "Customer Details deleted successfully" });
       } catch (err) {

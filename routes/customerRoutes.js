@@ -1,11 +1,12 @@
 const express = require("express")
 const router = express.Router();
 
-const customerRoutes = require('../controllers/customerMasterController')
+const customerRoutes = require('../controllers/customerMasterController');
+const verifyToken = require("../middleware/verfiyToken");
 
-router.post("/",customerRoutes.createCustomerDetails)
-router.get("/",customerRoutes.getCustomerDetails)
-router.put("/:customerId",customerRoutes.updateCustomersDetails)
-router.delete("/:customerId",customerRoutes.deleteCustomersDetails)
+router.post("/",verifyToken,customerRoutes.createCustomerDetails)
+router.get("/",verifyToken,customerRoutes.getCustomerDetails)
+router.put("/:customerId",verifyToken,customerRoutes.updateCustomersDetails)
+router.delete("/:customerId",verifyToken,customerRoutes.deleteCustomersDetails)
 
 module.exports=router

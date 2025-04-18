@@ -215,7 +215,7 @@ const userLogin = async (req, res) => {
       return res.status(401).json({ error: "Invalid email/mobile or password" });
     }
 
-    const token = jwt.sign({ userId: user.id }, secretKey, { expiresIn: "1h" });
+    const token = jwt.sign({ userId: user.userId }, secretKey, { expiresIn: "1h" });
     res.status(200).json({ success: "Login successful", token, user });
 
   } catch (error) {
@@ -280,16 +280,23 @@ const resetPassword = async (req, res) => {
       where: { resetPasswordToken: otp, resetPasswordExpires: { [Op.gt]: new Date() } },
     });
 
-    if (!user) {
+    if (!user || !user.resetPasswordExpires||user.resetPasswordExpires<new Date()) {
+      
+    await User.update(
+      { resetPasswordToken: null, resetPasswordExpires: null },
+      { where: { resetPasswordToken: otp } }
+    );
       return res.status(400).json({ error: "Invalid or expired OTP" });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await User.update(
-      { password: hashedPassword, resetPasswordToken: null, resetPasswordExpires: null },
-      { where: { resetPasswordToken: otp } }
-    );
+
+
+    user.password=hashedPassword;
+    user.resetPasswordToken=null;
+    user.resetPasswordExpires=null;
+    await user.save();
 
     res.status(200).json({ message: "Password reset successful" });
 

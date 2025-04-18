@@ -14,6 +14,10 @@ const paymentTypeMaster = sequelize.define(
         paymentType: {
             type: DataTypes.STRING,
             allowNull: false
+        },
+        userId:{
+            type:DataTypes.INTEGER,
+            allowNull:false
         }
     },
     {

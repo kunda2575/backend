@@ -14,6 +14,10 @@ const materialMaster = sequelize.define(
         materialName:{
             type:DataTypes.STRING,
             allowNull:false
+        },
+        userId:{
+            type:DataTypes.INTEGER,
+            allowNull:false
         }
     },
     {

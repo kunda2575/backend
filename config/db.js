@@ -34,7 +34,7 @@ const sqlDb = async () => {
     console.log("✅ Connected to PostgreSQL");
 
     // ✅ Sync all models AFTER they are imported
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ alter: true }); // this updates the table structure
     console.log("✅ Tables are updated!");
   } catch (err) {
     console.error("❌ Database connection failed:", err);

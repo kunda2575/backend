@@ -29,6 +29,10 @@ const userMaster = sequelize.define(
             type:DataTypes.STRING,
             allowNull :false,
             unique:true
+        },
+        userId:{
+            type:DataTypes.INTEGER,
+            allowNull:false
         }
     },{
         tableName :'user_masters',

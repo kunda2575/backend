@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 
+const fundPurposeController = require('../controllers/fundPurposeController');
+const verifyToken = require('../middleware/verfiyToken');
 
-const fundPurposeController = require('../controllers/fundPurposeController')
-
-router.post('/', fundPurposeController.createFundPurpose);
-router.get('/', fundPurposeController.getFundPurposes);
-router.put('/:id', fundPurposeController.updateFundPurpose);
-router.delete('/:id', fundPurposeController.deleteFundPurpose);
+router.post('/', verifyToken,fundPurposeController.createFundPurpose);
+router.get('/', verifyToken,fundPurposeController.getFundPurposes);
+router.put('/:id',verifyToken, fundPurposeController.updateFundPurpose);
+router.delete('/:id', verifyToken,fundPurposeController.deleteFundPurpose);
 
 module.exports = router;

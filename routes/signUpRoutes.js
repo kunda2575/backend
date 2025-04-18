@@ -3,12 +3,6 @@ const signUpController = require("../controllers/signUpController");
 
 const router = express.Router();
 
-
-
-
-
-
-
 /**
  * @swagger
  * /user/send-otp:

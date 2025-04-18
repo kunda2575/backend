@@ -2,7 +2,7 @@
 const {DataTypes}=require('sequelize')
 const {sequelize}=require('../config/db')
 
-const builserMaster = sequelize.define(
+const builderMaster = sequelize.define(
     'builder_master',{
         id: {
             type: DataTypes.INTEGER,
@@ -12,6 +12,10 @@ const builserMaster = sequelize.define(
         builderMaster:{
             type:DataTypes.STRING,
             allowNull:false
+        },
+        userId:{
+            type:DataTypes.INTEGER,
+            allowNull:false
         }
     },
     {
@@ -20,4 +24,4 @@ const builserMaster = sequelize.define(
     }
 
 )
-module.exports=builserMaster
+module.exports=builderMaster

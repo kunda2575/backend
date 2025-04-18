@@ -36,6 +36,10 @@ const ProjectMaster = sequelize.define(
         projectEndDate: {
             type: DataTypes.DATE,  
             allowNull: false
+        },
+        userId:{
+            type:DataTypes.INTEGER,
+            allowNull:false
         }
     },
     {

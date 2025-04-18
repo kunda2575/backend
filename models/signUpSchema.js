@@ -1,10 +1,10 @@
 const { Sequelize, DataTypes } = require("sequelize");
-const { sequelize } = require("../config/db"); 
+const { sequelize } = require("../config/db");
 
 const User = sequelize.define(
   "User",
   {
-    id: {
+    userId: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
@@ -21,7 +21,6 @@ const User = sequelize.define(
     mobilenumber: {
       type: DataTypes.STRING,
       allowNull: false,
-      
     },
     email: {
       type: DataTypes.STRING,

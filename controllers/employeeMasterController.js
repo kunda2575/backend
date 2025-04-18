@@ -4,9 +4,10 @@ const EmployeeMaster =require('../models/employeeMasterSchema');
 // create
 exports.createEmployeeDetails = async (req,res) =>{
     try {
+        const userId = req.userId;
         const{employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department}=req.body
         const newEmployeeDetails =await EmployeeMaster.create({
-            employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department})
+            employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department,userId})
         res.status(201).json(newEmployeeDetails)
 
     } catch (err) {
@@ -17,7 +18,8 @@ exports.createEmployeeDetails = async (req,res) =>{
 // read
 exports.getEmployeeDetails = async(req,res)=>{
  try {
-    const employeeDetails = await EmployeeMaster.findAll()
+    const userId = req.userId;
+    const employeeDetails = await EmployeeMaster.findAll({ where: { userId } })
     res.status(201).json(employeeDetails)
  } catch (err) {
     res.status(500).json({ error: err.message });
@@ -26,10 +28,11 @@ exports.getEmployeeDetails = async(req,res)=>{
 
 // update
 exports.updateEmployeesDetails = async (req,res)=>{
-    try { 
+    try {
+        const userId = req.userId; 
         const{employeeID}=req.params;
         const{employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department}=req.body
-       const employeeDetails =  await EmployeeMaster.findByPk(employeeID)
+       const employeeDetails =  await EmployeeMaster.findOne({ where: {employeeID, userId } })
        if(!employeeDetails)
         return res.status(404).json({ error: "Employees not found" });
 
@@ -52,8 +55,9 @@ exports.updateEmployeesDetails = async (req,res)=>{
 
 exports.deleteEmployeesDetails = async(req,res)=>{
     try {
+        const userId = req.userId;
         const {employeeID}=req.params;
-        const deleted = await EmployeeMaster.destroy({where:{employeeID}})
+        const deleted = await EmployeeMaster.destroy({where:{employeeID,userId}})
         if (!deleted) return res.status(404).json({ error: "Employee Details not found" });
         res.json({ message: "Employee Details deleted successfully" });
       } catch (err) {

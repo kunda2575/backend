@@ -45,6 +45,10 @@ const EmployeeMaster = sequelize.define(
         department: {
             type: DataTypes.STRING,
             allowNull: true
+        },
+        userId:{
+            type:DataTypes.INTEGER,
+            allowNull:false
         }
     },
     {

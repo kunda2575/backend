@@ -30,6 +30,10 @@ const teamMembers = sequelize.define(
         team_designation:{
             type:DataTypes.STRING,
             allowNull:false
+        },
+        userId:{
+            type:DataTypes.INTEGER,
+            allowNull:false
         }
     },{
         tableName:"team_members",

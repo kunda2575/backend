@@ -43,6 +43,9 @@ const CustomerMaster = sequelize.define(
         flatNo:{
             type:DataTypes.STRING,
             allowNull :false
+        }, userId:{
+            type:DataTypes.INTEGER,
+            allowNull:false
         }
     },{
     tableName:'customer_masters',

@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const blocksController = require('../controllers/blockMasterController');
+const verifyToken = require('../middleware/verfiyToken')
 
-router.post('/', blocksController.createBlock);
-router.get('/', blocksController.getBlocks);
-router.put('/:id', blocksController.updateBlock);
-router.delete('/:id', blocksController.deleteBlock);
+router.post('/', verifyToken, blocksController.createBlock);
+router.get('/', verifyToken, blocksController.getBlocks);
+router.put('/:id', verifyToken, blocksController.updateBlock);
+router.delete('/:id', verifyToken, blocksController.deleteBlock);
 
 module.exports = router;

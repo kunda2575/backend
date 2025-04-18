@@ -12,6 +12,10 @@ const FundSource = sequelize.define(
         fundSource: {
             type: DataTypes.STRING,
             allowNull: false
+        },
+        userId:{
+            type:DataTypes.INTEGER,
+            allowNull:false
         }
     },
     {

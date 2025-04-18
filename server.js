@@ -13,6 +13,7 @@ const employeeRoutes = require('./routes/employeeRoutes');
 const expenseCategoryRoutes = require('./routes/expenseCategoryRoutes');
 const fundPurposeRoutes = require('./routes/fundPurposeRoutes');
 const fundSourceRoutes = require('./routes/fundSourceRoutes');
+const leadSourceRoutes = require('./routes/leadSourceRoutes');
 
 // Schemas
 const { leadStage } = require('./models/leadStageSchema');
@@ -65,14 +66,15 @@ sqlDb()
 
     // masters
     app.use('/api/blocks', blocksRoutes);
-    app.use('/api/builders',builderRoutes);
+    app.use('/api/builders',builderRoutes, );
     app.use('/api/banks',bankRoutes);
     app.use('/api/customers',customerRoutes);
     app.use('/api/departments', departmentRoutes);
     app.use('/api/employees',employeeRoutes);
     app.use('/api/expenseCategorys',expenseCategoryRoutes);
     app.use('/api/fundPurposes',fundPurposeRoutes);
-    app.use("/api/fundSources",fundSourceRoutes);
+    app.use('/api/fundSources',fundSourceRoutes);
+    app.use('/api/leadSources',leadSourceRoutes);
 
     // ✅ Start Server
     app.listen(port, () => {
