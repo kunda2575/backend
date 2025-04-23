@@ -88,7 +88,7 @@ sqlDb()
     app.use('/api/leadSources',leadSourceRoutes);
     app.use('/api/leadStages',leadStageRoutes);
     app.use('/api/lostReasons',lostReasonRoutes);
-    app.use('/api/matrialMaster',materialMasterRoutes);
+    app.use('/api/materialMaster',materialMasterRoutes);
     app.use('/api/paymentModes',paymentModeRoutes);
     app.use('/api/paymentType',paymentTypeRoutes);
     app.use('/api/roles',rolesMasterRoutes);
