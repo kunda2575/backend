@@ -13,7 +13,7 @@ exports.createLostReasons = async (req, res) => {
 };
 
 // Read all
-exports.getLostReasonss = async (req, res) => {
+exports.getLostReasons = async (req, res) => {
   try {
     const userId = req.userId;
     const lostReason = await LostReasons.findAll({ where: { userId } });
