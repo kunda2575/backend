@@ -5,6 +5,7 @@ exports.createBankDetails = async (req, res) => {
   try {
     const userId = req.userId;
     const { bankName, ifscCode, branch } = req.body;
+  
     const newBankDetails = await BankMaster.create({ bankName, ifscCode, branch, userId });
     res.status(201).json(newBankDetails);
   } catch (err) {

@@ -29,7 +29,7 @@ exports.getCustomerDetails = async(req,res)=>{
 // update
 exports.updateCustomersDetails = async (req,res)=>{
     try {
-            const userId = req.userId; 
+        const userId = req.userId; 
         const{customerId}=req.params;
         const{customerName,customerPhone,customerEmail,customerAddress,customerProfession,languagesKnown,projectNameBlock,flatNo}=req.body
        const customerDetails =  await CustomerMaster.findOne({ where: {customerId, userId } })
@@ -40,7 +40,7 @@ exports.updateCustomersDetails = async (req,res)=>{
        customerDetails.customerPhone = customerPhone;
        customerDetails.customerEmail = customerEmail;
        customerDetails.customerAddress = customerAddress;
-       customerDetails. customerProfession= customerProfession;
+       customerDetails.customerProfession= customerProfession;
        customerDetails.languagesKnown = languagesKnown;
        customerDetails.projectNameBlock =projectNameBlock ;
        customerDetails.flatNo = flatNo;

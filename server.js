@@ -14,6 +14,17 @@ const expenseCategoryRoutes = require('./routes/expenseCategoryRoutes');
 const fundPurposeRoutes = require('./routes/fundPurposeRoutes');
 const fundSourceRoutes = require('./routes/fundSourceRoutes');
 const leadSourceRoutes = require('./routes/leadSourceRoutes');
+const leadStageRoutes = require('./routes/leadStageRoutes');
+const lostReasonRoutes = require('./routes/lostReasonsRoutes');
+const materialMasterRoutes = require('./routes/materialMasterRoutes');
+const paymentModeRoutes = require('./routes/paymentModeRoutes');
+const paymentTypeRoutes = require('./routes/paymentTypeRoutes');
+const rolesMasterRoutes = require('./routes/rolesMasterRoutes');
+const projectRoutes = require('./routes/projectRoutes');
+const teamMemberRoutes = require('./routes/teamMemberRoutes');
+const unitTypeRoutes = require('./routes/unitTypeRoutes');
+const vendorRoutes = require('./routes/vendorRoutes');
+
 
 // Schemas
 const { leadStage } = require('./models/leadStageSchema');
@@ -27,7 +38,7 @@ const { rolesMaster } = require('./models/rolesMasterSchema');
 const { builderMaster } = require('./models/builderMasterSchema');
 const { projectMaster } = require('./models/projectMasterSchema');
 const { blocksMaster } = require('./models/blocksMasterSchema');
-const { paymentModeMaster } = require('./models/paymentMoseMasterSchema');
+const { paymentModeMaster } = require('./models/paymentModeMasterSchema');
 const { paymentTypeMaster } = require('./models/paymentTypeMasterSchema');
 const { unitType } = require('./models/unitTypeSchema');
 const { employeeMaster } = require('./models/employeeMasterSchema');
@@ -75,6 +86,16 @@ sqlDb()
     app.use('/api/fundPurposes',fundPurposeRoutes);
     app.use('/api/fundSources',fundSourceRoutes);
     app.use('/api/leadSources',leadSourceRoutes);
+    app.use('/api/leadStages',leadStageRoutes);
+    app.use('/api/lostReasons',lostReasonRoutes);
+    app.use('/api/matrialMaster',materialMasterRoutes);
+    app.use('/api/paymentModes',paymentModeRoutes);
+    app.use('/api/paymentType',paymentTypeRoutes);
+    app.use('/api/roles',rolesMasterRoutes);
+    app.use('/api/projects',projectRoutes);
+    app.use('/api/teamMembers',teamMemberRoutes);
+    app.use('/api/unitTypes',unitTypeRoutes);
+    app.use('/api/vendors',vendorRoutes);
 
     // ✅ Start Server
     app.listen(port, () => {
