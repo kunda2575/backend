@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const lostReasonController = require('../controllers/lostReasonsController');
+const lostReasonController = require("../controllers/lostReasonsController")
 const verifyToken = require('../middleware/verfiyToken');
 
 router.post('/', verifyToken,lostReasonController.createLostReasons);
