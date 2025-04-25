@@ -11,7 +11,7 @@ const CustomerMaster = sequelize.define(
             primaryKey: true
         },
         customerId:{
-            type:DataTypes.TEXT,
+            type:DataTypes.STRING,
             allowNull :false,
             unique: true
         },
