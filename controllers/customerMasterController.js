@@ -1,13 +1,14 @@
 
-const CustomerMaster =require('../models/customerMasterSchema');
+const CustomerMaster = require('../models/customerMasterSchema');
 
 // create
-exports.createCustomerDetails = async (req,res) =>{
+exports.createCustomerDetails = async (req, res) => {
     try {
-            const userId = req.userId;
-        const{customerName,customerPhone,customerEmail,customerAddress,customerProfession,languagesKnown,projectNameBlock,flatNo}=req.body
-        const newCustomerDetails =await CustomerMaster.create({
-            userId,customerName,customerPhone,customerEmail,customerAddress,customerProfession,languagesKnown,projectNameBlock,flatNo})
+        const userId = req.userId;
+        const { customerId, customerName, customerPhone, customerEmail, customerAddress, customerProfession, languagesKnown, projectNameBlock, flatNo } = req.body
+        const newCustomerDetails = await CustomerMaster.create({
+            customerId, customerName, customerPhone, customerEmail, customerAddress, customerProfession, languagesKnown, projectNameBlock, flatNo, userId
+        })
         res.status(201).json(newCustomerDetails)
 
     } catch (err) {
@@ -16,36 +17,37 @@ exports.createCustomerDetails = async (req,res) =>{
 }
 
 // read
-exports.getCustomerDetails = async(req,res)=>{
- try {
+exports.getCustomerDetails = async (req, res) => {
+    try {
         const userId = req.userId;
-    const customerDetails = await CustomerMaster.findAll({ where: { userId } })
-    res.status(201).json(customerDetails)
- } catch (err) {
-    res.status(500).json({ error: err.message });
- }
+        const customerDetails = await CustomerMaster.findAll({ where: { userId } })
+        res.status(201).json(customerDetails)
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 }
 
 // update
-exports.updateCustomersDetails = async (req,res)=>{
+exports.updateCustomersDetails = async (req, res) => {
     try {
-        const userId = req.userId; 
-        const{customerId}=req.params;
-        const{customerName,customerPhone,customerEmail,customerAddress,customerProfession,languagesKnown,projectNameBlock,flatNo}=req.body
-       const customerDetails =  await CustomerMaster.findOne({ where: {customerId, userId } })
-       if(!customerDetails)
-        return res.status(404).json({ error: "Customers not found" });
+        const userId = req.userId;
+        const { id } = req.params;
+        const { customerId, customerName, customerPhone, customerEmail, customerAddress, customerProfession, languagesKnown, projectNameBlock, flatNo } = req.body
+        const customerDetails = await CustomerMaster.findOne({ where: { id, userId } })
+        if (!customerDetails)
+            return res.status(404).json({ error: "Customers not found" });
 
-       customerDetails.customerName=customerName;
-       customerDetails.customerPhone = customerPhone;
-       customerDetails.customerEmail = customerEmail;
-       customerDetails.customerAddress = customerAddress;
-       customerDetails.customerProfession= customerProfession;
-       customerDetails.languagesKnown = languagesKnown;
-       customerDetails.projectNameBlock =projectNameBlock ;
-       customerDetails.flatNo = flatNo;
-            await customerDetails.save()
-            res.status(201).json(customerDetails)
+        customerDetails.customerId = customerId;
+        customerDetails.customerName = customerName;
+        customerDetails.customerPhone = customerPhone;
+        customerDetails.customerEmail = customerEmail;
+        customerDetails.customerAddress = customerAddress;
+        customerDetails.customerProfession = customerProfession;
+        customerDetails.languagesKnown = languagesKnown;
+        customerDetails.projectNameBlock = projectNameBlock;
+        customerDetails.flatNo = flatNo;
+        await customerDetails.save()
+        res.status(201).json(customerDetails)
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -53,15 +55,14 @@ exports.updateCustomersDetails = async (req,res)=>{
 
 //delete
 
-exports.deleteCustomersDetails = async(req,res)=>{
+exports.deleteCustomersDetails = async (req, res) => {
     try {
-            const userId = req.userId;
-        const {customerId}=req.params;
-        const deleted = await CustomerMaster.destroy({where:{customerId,userId}})
+        const userId = req.userId;
+        const { id } = req.params;
+        const deleted = await CustomerMaster.destroy({ where: { id, userId } })
         if (!deleted) return res.status(404).json({ error: "Customer Details not found" });
         res.json({ message: "Customer Details deleted successfully" });
-      } catch (err) {
+    } catch (err) {
         res.status(500).json({ error: err.message });
-      }
-    };
-    
+    }
+};

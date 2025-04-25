@@ -6,7 +6,7 @@ const verifyToken = require("../middleware/verfiyToken");
 
 router.post("/",verifyToken, departmentController.createDepartmentDetails);
 router.get("/",verifyToken, departmentController.getDepartmentDetails);
-router.put("/:departmentID",verifyToken, departmentController.updateDepartmentDetails);
-router.delete("/:departmentID",verifyToken, departmentController.deleteDepartmentDetails)
+router.put("/:id",verifyToken, departmentController.updateDepartmentDetails);
+router.delete("/:id",verifyToken, departmentController.deleteDepartmentDetails)
 
 module.exports = router;

@@ -1,4 +1,4 @@
-const UserMaster = require('../models/UserSchema');
+const UserMaster = require('../models/userMasterSchema');
 
 // Create
 exports.createUser = async (req, res) => {

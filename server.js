@@ -24,6 +24,7 @@ const projectRoutes = require('./routes/projectRoutes');
 const teamMemberRoutes = require('./routes/teamMemberRoutes');
 const unitTypeRoutes = require('./routes/unitTypeRoutes');
 const vendorRoutes = require('./routes/vendorRoutes');
+const userMasterRoutes = require('./routes/userRoutes')
 
 
 // Schemas
@@ -95,6 +96,7 @@ sqlDb()
     app.use('/api/projects',projectRoutes);
     app.use('/api/teamMembers',teamMemberRoutes);
     app.use('/api/unitTypes',unitTypeRoutes);
+    app.use('/api/userMaster',userMasterRoutes);
     app.use('/api/vendors',vendorRoutes);
 
     // ✅ Start Server

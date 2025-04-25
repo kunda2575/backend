@@ -5,8 +5,8 @@ const DepartmentMaster = require("../models/departmentMasterSchema");
 exports.createDepartmentDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        const { departmentName } = req.body;
-        const newDepartment = await DepartmentMaster.create({ departmentName,userId });
+        const { departmentName, departmentID } = req.body;
+        const newDepartment = await DepartmentMaster.create({ departmentName,userId,departmentID });
         res.status(201).json(newDepartment);
     } catch (error) {
         res.status(500).json({ error: error.message })
@@ -30,9 +30,9 @@ exports.getDepartmentDetails = async (req, res) => {
 exports.updateDepartmentDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        const { departmentID } = req.params;
+        const { id } = req.params;
         const { departmentName } = req.body;
-        const department = await DepartmentMaster.findOne({ where: {departmentID, userId } });
+        const department = await DepartmentMaster.findOne({ where: {id, userId } });
         if (!department) return res.status(404).json({ error: "Department not found" });
 
         department.departmentName = departmentName;
@@ -49,8 +49,8 @@ exports.updateDepartmentDetails = async (req, res) => {
 exports.deleteDepartmentDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        const { departmentID } = req.params;
-        const deleted = await DepartmentMaster.destroy({ where: { departmentID,userId } });
+        const { id } = req.params;
+        const deleted = await DepartmentMaster.destroy({ where: { id,userId } });
         if (!deleted) return res.status(404).json({ error: "Department not found" });
         res.json({ message: "Department deleted successfully" });
     } catch (error) {

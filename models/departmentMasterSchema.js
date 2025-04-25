@@ -4,11 +4,15 @@ const { sequelize } = require('../config/db');
 const DepartmentMaster = sequelize.define(
     'DepartmentMaster',
     {
-        
-        departmentID: {
+        id: {
             type: DataTypes.INTEGER,
             autoIncrement: true,
             primaryKey: true
+        },
+        departmentID: {
+            type: DataTypes.STRING,
+            allowNull :false,
+            unique: true
         },
         departmentName: {
             type: DataTypes.STRING,

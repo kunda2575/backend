@@ -4,8 +4,8 @@ const MaterialMaster = require('../models/materialMasterSchema');
 exports.createMaterialMaster = async (req, res) => {
   try {
     const userId = req.userId;
-    const { materialName } = req.body;
-    const newMaterialMaster = await MaterialMaster.create({ materialName,userId});
+    const { materialName,material_id } = req.body;
+    const newMaterialMaster = await MaterialMaster.create({ material_id, materialName,userId});
     res.status(201).json(newMaterialMaster);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -28,11 +28,12 @@ exports.updateMaterialMaster = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const { materialName } = req.body;
+    const {material_id, materialName } = req.body;
     const materialNames = await MaterialMaster.findOne({ where: {id, userId } });
     if (!materialNames) return res.status(404).json({ error: "Material Master not found" });
 
    
+    materialNames. material_id= material_id
     materialNames.materialName=materialName
     await materialNames.save();
 

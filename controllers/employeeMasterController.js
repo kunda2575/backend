@@ -5,9 +5,9 @@ const EmployeeMaster =require('../models/employeeMasterSchema');
 exports.createEmployeeDetails = async (req,res) =>{
     try {
         const userId = req.userId;
-        const{employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department}=req.body
+        const{employeeID,employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department}=req.body
         const newEmployeeDetails =await EmployeeMaster.create({
-            employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department,userId})
+            employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department,userId,employeeID})
         res.status(201).json(newEmployeeDetails)
 
     } catch (err) {
@@ -30,9 +30,9 @@ exports.getEmployeeDetails = async(req,res)=>{
 exports.updateEmployeesDetails = async (req,res)=>{
     try {
         const userId = req.userId; 
-        const{employeeID}=req.params;
+        const{id}=req.params;
         const{employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department}=req.body
-       const employeeDetails =  await EmployeeMaster.findOne({ where: {employeeID, userId } })
+       const employeeDetails =  await EmployeeMaster.findOne({ where: {id, userId } })
        if(!employeeDetails)
         return res.status(404).json({ error: "Employees not found" });
 
@@ -56,8 +56,8 @@ exports.updateEmployeesDetails = async (req,res)=>{
 exports.deleteEmployeesDetails = async(req,res)=>{
     try {
         const userId = req.userId;
-        const {employeeID}=req.params;
-        const deleted = await EmployeeMaster.destroy({where:{employeeID,userId}})
+        const {id}=req.params;
+        const deleted = await EmployeeMaster.destroy({where:{id,userId}})
         if (!deleted) return res.status(404).json({ error: "Employee Details not found" });
         res.json({ message: "Employee Details deleted successfully" });
       } catch (err) {

@@ -10,7 +10,7 @@ const blocksMaster = sequelize.define(
             primaryKey: true
         },
         blockNO: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.STRING,
             allowNull: false
         },
         blockName: {

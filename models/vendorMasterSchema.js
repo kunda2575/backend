@@ -4,10 +4,15 @@ const {sequelize}=require('../config/db')
 
 const vendorMaster = sequelize.define(
     'vendor_master',{
+        id: {
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
+            primaryKey: true
+        },
         vendorId:{
-            type: DataTypes.INTEGER, // ✅ Added data type
-            primaryKey: true,
-            autoIncrement: true // ✅ Auto-generate IDs
+            type: DataTypes.STRING, // ✅ Added data type
+            allowNull :false,
+            unique: true
         },
         vendorName:{
             type:DataTypes.STRING,

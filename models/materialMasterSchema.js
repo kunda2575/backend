@@ -5,11 +5,15 @@ const {sequelize}=require('../config/db')
 
 const materialMaster = sequelize.define(
     'material_master',{
+        id: {
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
+            primaryKey: true
+        },
         material_id:{
-            type:DataTypes.INTEGER,
-            primaryKey:true,
-        
-            autoIncrement:true
+            type:DataTypes.STRING,
+            allowNull :false,
+            unique: true
         },
         materialName:{
             type:DataTypes.STRING,

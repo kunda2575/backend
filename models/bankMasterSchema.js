@@ -10,16 +10,16 @@ const BankMaster = sequelize.define(
             primaryKey: true
         },
         bankName: {
-            type: DataTypes.TEXT,
+            type: DataTypes.STRING,
             allowNull: false
         },
         ifscCode: {
-            type: DataTypes.TEXT,
+            type: DataTypes.STRING,
             allowNull: false,
             unique: true
         },
         branch: {
-            type: DataTypes.TEXT,
+            type: DataTypes.STRING,
             allowNull: false
         },
         userId:{

@@ -4,10 +4,15 @@ const { sequelize } = require('../config/db');
 const EmployeeMaster = sequelize.define(
     'EmployeeMaster',
     {
-        employeeID: {
+        id: {
             type: DataTypes.INTEGER,
             autoIncrement: true,
             primaryKey: true
+        },
+        employeeID: {
+            type: DataTypes.STRING,
+            allowNull :false,
+            unique: true
         },
         employeeName: {
             type: DataTypes.STRING,

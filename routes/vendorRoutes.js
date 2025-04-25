@@ -6,7 +6,7 @@ const verifyToken = require('../middleware/verfiyToken');
 
 router.post('/', verifyToken,vendorMaster.createVendor);
 router.get('/', verifyToken,vendorMaster.getVendors);
-router.put('/:vendorId', verifyToken,vendorMaster.updateVendor);
-router.delete('/:vendorId', verifyToken,vendorMaster.deleteVendor);
+router.put('/:id', verifyToken,vendorMaster.updateVendor);
+router.delete('/:id', verifyToken,vendorMaster.deleteVendor);
 
 module.exports = router;

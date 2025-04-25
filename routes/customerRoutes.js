@@ -6,7 +6,7 @@ const verifyToken = require("../middleware/verfiyToken");
 
 router.post("/",verifyToken,customerRoutes.createCustomerDetails)
 router.get("/",verifyToken,customerRoutes.getCustomerDetails)
-router.put("/:customerId",verifyToken,customerRoutes.updateCustomersDetails)
-router.delete("/:customerId",verifyToken,customerRoutes.deleteCustomersDetails)
+router.put("/:id",verifyToken,customerRoutes.updateCustomersDetails)
+router.delete("/:id",verifyToken,customerRoutes.deleteCustomersDetails)
 
 module.exports=router
