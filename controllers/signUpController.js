@@ -47,10 +47,10 @@ const sendOtp = async (req, res) => {
     // Verify SMTP Connection
     transporter.verify((error, success) => {
       if (error) {
-        console.error("🚨 SMTP Connection Error:", error);
+        // console.error("🚨 SMTP Connection Error:", error);
         return res.status(500).json({ error: "Email server error" });
       } else {
-        console.log("✅ SMTP Server is Ready to Send Emails");
+        // console.log("✅ SMTP Server is Ready to Send Emails");
       }
     });
 
@@ -64,10 +64,10 @@ const sendOtp = async (req, res) => {
 
     transporter.sendMail(mailOptions, (err, info) => {
       if (err) {
-        console.error("🚨 Error sending OTP email:", err);
+        // console.error("🚨 Error sending OTP email:", err);
         return res.status(500).json({ error: "Failed to send OTP email" });
       } else {
-        console.log("✅ Email sent:", info.response);
+        // console.log("✅ Email sent:", info.response);
         return res.status(200).json({ message: "OTP sent to email" });
       }
     });
@@ -94,8 +94,8 @@ const verifyOtp = async (req, res) => {
     });
 
     // Debugging logs
-    console.log("Stored Expiry:", otpRecord?.expiry);
-    console.log("Current Time:", new Date());
+    // console.log("Stored Expiry:", otpRecord?.expiry);
+    // console.log("Current Time:", new Date());
 
     if (!otpRecord) {
       return res.status(400).json({ error: "Invalid or expired OTP" });
@@ -116,7 +116,7 @@ const userRegister = async (req, res) => {
   const t = await sequelize.transaction(); // Start transaction
 
   try {
-    console.log("✅ Received Registration Data:", req.body);
+    // console.log("✅ Received Registration Data:", req.body);
 
     const { fullname, mobilenumber, email, password, profile } = req.body;
 
@@ -144,7 +144,7 @@ const userRegister = async (req, res) => {
 
     await t.commit(); // Commit transaction
 
-    console.log("✅ User stored successfully:", newUser.toJSON());
+    // console.log("✅ User stored successfully:", newUser.toJSON());
 
     // Send email with user details
     const transporter = nodemailer.createTransport({
@@ -162,10 +162,10 @@ const userRegister = async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Welcome to [Your Platform Name] - Registration Successful 🎉",
+      subject: "Welcome to BUILDRVIEW - Registration Successful 🎉",
       text: `Dear ${fullname},
   
-  Welcome to [Your Platform Name]! 🎉 We're excited to have you on board.
+  Welcome to BUILDRVIEW! 🎉 We're excited to have you on board.
   
   Here are your account details:
   
@@ -266,7 +266,7 @@ const forgotPassword = async (req, res) => {
     res.status(200).json({ message: "OTP sent to your email" });
 
   } catch (error) {
-    console.error("Error in forgot password:", error);
+    // console.error("Error in forgot password:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -301,7 +301,7 @@ const resetPassword = async (req, res) => {
     res.status(200).json({ message: "Password reset successful" });
 
   } catch (error) {
-    console.error("Error resetting password:", error);
+    // console.error("Error resetting password:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

@@ -5,8 +5,8 @@ const DepartmentMaster = require("../models/departmentMasterSchema");
 exports.createDepartmentDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        const { departmentName, departmentID } = req.body;
-        const newDepartment = await DepartmentMaster.create({ departmentName,userId,departmentID });
+        const { departmentMaster, departmentID } = req.body;
+        const newDepartment = await DepartmentMaster.create({ departmentMaster,userId,departmentID });
         res.status(201).json(newDepartment);
     } catch (error) {
         res.status(500).json({ error: error.message })
@@ -31,11 +31,12 @@ exports.updateDepartmentDetails = async (req, res) => {
     try {
         const userId = req.userId;
         const { id } = req.params;
-        const { departmentName } = req.body;
+        const { departmentMaster,departmentID } = req.body;
         const department = await DepartmentMaster.findOne({ where: {id, userId } });
         if (!department) return res.status(404).json({ error: "Department not found" });
 
-        department.departmentName = departmentName;
+        department.departmentMaster = departmentMaster;
+        department.departmentID = departmentID;
 
         await department.save();
         res.json(department);

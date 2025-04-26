@@ -4,8 +4,8 @@ const BlocksMaster = require('../models/blocksMasterSchema');
 exports.createBlock = async (req, res) => {
   try {
     const userId = req.userId;
-    const { blockNO, blockName } = req.body;
-    const newBlock = await BlocksMaster.create({ blockNO, blockName, userId });
+    const { blockNoOrName } = req.body;
+    const newBlock = await BlocksMaster.create({ blockNoOrName,  userId });
     res.status(201).json(newBlock);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -28,12 +28,12 @@ exports.updateBlock = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const { blockNO, blockName } = req.body;
+    const { blockNoOrName } = req.body;
     const block = await BlocksMaster.findOne({ where: {id, userId } });
     if (!block) return res.status(404).json({ error: "Block not found" });
 
-    block.blockNO = blockNO;
-    block.blockName = blockName;
+    block.blockNoOrName = blockNoOrName;
+  
     await block.save();
 
     res.json(block);

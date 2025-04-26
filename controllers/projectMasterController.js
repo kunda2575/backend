@@ -5,9 +5,9 @@ const ProjectMaster =require('../models/projectMasterSchema');
 exports.createProjectDetails = async (req,res) =>{
     try {
             const userId = req.userId;
-        const{projectName,projectOwner,projectContact,projectAddress,projectBrouchers,projectStartDate,projectEndDate}=req.body
+        const{projectMaster,projectName,projectOwner,projectContact,projectAddress,projectBrouchers,projectStartDate,projectEndDate}=req.body
         const newProjectDetails =await ProjectMaster.create({
-            userId,projectName,projectOwner,projectContact,projectAddress,projectBrouchers,projectStartDate,projectEndDate})
+            userId,projectMaster,projectName,projectOwner,projectContact,projectAddress,projectBrouchers,projectStartDate,projectEndDate})
         res.status(201).json(newProjectDetails)
 
     } catch (err) {
@@ -31,11 +31,12 @@ exports.updateProjectsDetails = async (req,res)=>{
     try {
             const userId = req.userId; 
         const{id}=req.params;
-        const{projectName,projectOwner,projectContact,projectAddress,projectBrouchers,projectStartDate,projectEndDate}=req.body
+        const{projectMaster,projectName,projectOwner,projectContact,projectAddress,projectBrouchers,projectStartDate,projectEndDate}=req.body
        const projectDetails =  await ProjectMaster.findOne({ where: {id, userId } })
        if(!projectDetails)
         return res.status(404).json({ error: "Projects not found" });
 
+       projectDetails.projectMaster=projectMaster;
        projectDetails.projectName=projectName;
        projectDetails.projectOwner = projectOwner;
        projectDetails.projectContact = projectContact;

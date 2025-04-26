@@ -9,14 +9,11 @@ const blocksMaster = sequelize.define(
             autoIncrement: true,
             primaryKey: true
         },
-        blockNO: {
+        blockNoOrName: {
             type: DataTypes.STRING,
             allowNull: false
         },
-        blockName: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
+       
         userId:{
             type:DataTypes.INTEGER,
             allowNull:true
