@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const leadController = require("../../controllers/transactionController/leads")
+const leadController = require("../../controllers/transactionControllers/leads")
 const verifyToken = require('../../middleware/verfiyToken')
 
 
