@@ -3,7 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { sqlDb } = require("./config/db");
 
-// masters
+//  update masters
 const blocksRoutes = require('./routes/blockRoutes');
 const builderRoutes = require('./routes/builderRoutes');
 const bankRoutes = require('./routes/bankRoutes');
@@ -25,8 +25,8 @@ const teamMemberRoutes = require('./routes/teamMemberRoutes');
 const unitTypeRoutes = require('./routes/unitTypeRoutes');
 const vendorRoutes = require('./routes/vendorRoutes');
 const userMasterRoutes = require('./routes/userRoutes')
-
-
+  // transaction routes
+const leadTransaction = require("./routes/transactionRoutes/leadsRoutes")
 // Schemas
 const { leadStage } = require('./models/leadStageSchema');
 const { leadSource } = require('./models/leadSourceSchema');
@@ -49,6 +49,7 @@ const { lostReasons } = require('./models/lostReasonsSchema');
 const { bankMaster } = require('./models/bankMasterSchema');
 const { fundSource } = require('./models/fundSourceSchema');
 const { fundPurpose } = require('./models/fundPurposeSchema');
+const {leads}= require('./models/transactionModels/leadsModel')
 
 // Routes
 const userRoutes = require("./routes/signUpRoutes");
@@ -98,6 +99,9 @@ sqlDb()
     app.use('/api/unitTypes',unitTypeRoutes);
     app.use('/api/userMaster',userMasterRoutes);
     app.use('/api/vendors',vendorRoutes);
+
+      //transaction
+    app.use('/api/leads',leadTransaction)
 
     // ✅ Start Server
     app.listen(port, () => {
