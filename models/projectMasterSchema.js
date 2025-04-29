@@ -9,10 +9,7 @@ const ProjectMaster = sequelize.define(
             autoIncrement: true,
             primaryKey: true
         },
-        projectMaster: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
+    
         projectName: {
             type: DataTypes.STRING,
             allowNull: false
