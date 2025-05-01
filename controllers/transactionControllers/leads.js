@@ -2,15 +2,12 @@
 const { Op } = require('sequelize');
 
 const Leads = require("../../models/transactionModels/leadsModel")
-<<<<<<< HEAD:controllers/transactionControllers/leads.js
 const LeadSource = require("../../models/updateModels/leadSourceSchema")
 const LeadStage = require("../../models/updateModels/leadStageSchema")
 const TeamMember =  require("../../models/updateModels/teamMembersSchema")
-=======
 const LeadSource = require("../../models/leadSourceSchema")
 const LeadStage = require("../../models/leadStageSchema")
 const TeamMember = require("../../models/teamMembersSchema")
->>>>>>> previous:controllers/transactionController/leads.js
 // Create
 exports.createLeadsDetails = async (req, res) => {
   try {
