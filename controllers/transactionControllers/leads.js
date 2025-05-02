@@ -5,9 +5,7 @@ const Leads = require("../../models/transactionModels/leadsModel")
 const LeadSource = require("../../models/updateModels/leadSourceSchema")
 const LeadStage = require("../../models/updateModels/leadStageSchema")
 const TeamMember =  require("../../models/updateModels/teamMembersSchema")
-const LeadSource = require("../../models/leadSourceSchema")
-const LeadStage = require("../../models/leadStageSchema")
-const TeamMember = require("../../models/teamMembersSchema")
+
 // Create
 exports.createLeadsDetails = async (req, res) => {
   try {

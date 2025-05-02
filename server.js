@@ -25,8 +25,16 @@ const teamMemberRoutes = require('./routes/updateRoutes/teamMemberRoutes');
 const unitTypeRoutes = require('./routes/updateRoutes/unitTypeRoutes');
 const vendorRoutes = require('./routes/updateRoutes/vendorRoutes');
 const userMasterRoutes = require('./routes/updateRoutes/userRoutes')
-  // transaction routes
+ 
+
+
+// transaction routes
 const leadTransaction = require("./routes/transactionRoutes/leadsRoutes")
+const stockAvailabilityRoutes = require('./routes/transactionRoutes/stockAvailabilityRoutes')
+const inventoryEntryRoutes = require('./routes/transactionRoutes/inventoryEntryRoutes')
+
+
+
 // Schemas
 const { leadStage } = require('./models/updateModels/leadStageSchema');
 const { leadSource } = require('./models/updateModels/leadSourceSchema');
@@ -49,7 +57,13 @@ const { lostReasons } = require('./models/updateModels/lostReasonsSchema');
 const { bankMaster } = require('./models/updateModels/bankMasterSchema');
 const { fundSource } = require('./models/updateModels/fundSourceSchema');
 const { fundPurpose } = require('./models/updateModels/fundPurposeSchema');
+
+
+// tranaction models 
 const {leads}= require('./models/transactionModels/leadsModel')
+const {Material} =require('./models/transactionModels/stockAvailabilityModel')
+const {inventory_entry} = require('./models/transactionModels/inventoryEntryModel')
+
 
 // Routes
 const userRoutes = require("./routes/SignUpRoutes/signUpRoutes");
@@ -102,6 +116,8 @@ sqlDb()
 
       //transaction
     app.use('/api/leads',leadTransaction)
+    app.use('/api/stocks',stockAvailabilityRoutes)
+    app.use('/api/inventory',inventoryEntryRoutes)
 
     // ✅ Start Server
     app.listen(port, () => {
