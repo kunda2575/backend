@@ -133,22 +133,3 @@ exports.getTeamMemberDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
-
-
-// PORT=2026
-// DB_PORT=5432
-// DB_HOST=localhost
-// DB_USER=postgres
-// DB_PASS=buildrview
-// DB_NAME=desktop
-
-// DB_URL=postgresql://kunda:NqThxW6e9BN7meDG7IBaengyHuW857P6@dpg-d01g42buibrs73api8ig-a.oregon-postgres.render.com/desktop
-
-
-// JWT_SECRET=pravin
-// EMAIL_USER=kr19pravin@gmail.com
-// EMAIL_PASS=krbe qjhk uvxa dfmk
-
-
-
