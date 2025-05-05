@@ -57,47 +57,99 @@ exports.createLeadsDetails = async (req, res) => {
 };
 
 // Read all
-exports.getLeadDetails = async (req, res) => {
+// exports.getLeadDetails = async (req, res) => {
 
+//   try {
+//     console.log("query = ", req.query);
+
+//     const userId = req.userId;
+
+//     const skip = parseInt(req.query.skip) || 0;
+//     const limit = parseInt(req.query.limit) || null;  // null means no limit
+//     const conditions = [];
+
+//     // Utility function to parse and handle empty or null arrays
+//     const parseArray = value => (value && value !== '[]') ? value.split(',').map(item => item.trim()) : [];
+
+//     // Add conditions if query parameters are provided and valid
+//     if (req.query.leadStage) conditions.push({ lead_stage: { [Op.in]: parseArray(req.query.leadStage) } });
+//     if (req.query.leadSource) conditions.push({ lead_source: { [Op.in]: parseArray(req.query.leadSource) } });
+//     if (req.query.teamMember) conditions.push({ team_member: { [Op.in]: parseArray(req.query.teamMember) } });
+
+//     // If no conditions, fetch all data (no filter)
+//     const whereClause = conditions.length > 0 ? { [Op.or]: conditions } : {};
+
+//     console.log("whereClause =", whereClause);  // Debugging
+
+//     // Fetch leads based on whereClause
+//     // Fetch paginated leads
+//     const leadDetails = await Leads.findAll({
+//       where: whereClause,
+//       offset: skip,
+//       limit: limit,
+//     });
+//     const leadDetailsCount = await Leads.count({ where: whereClause });
+
+//     // Return result or message if no data is found
+//     res.status(200).json({ "leadDetails": leadDetails, "leadCount": leadDetailsCount })
+//   } catch (err) {
+//     console.error("Error details:", err);  // Log the error
+//     res.status(500).json({ error: err.message });
+//   }
+
+// };
+
+exports.getLeadDetails = async (req, res) => {
   try {
     console.log("query = ", req.query);
 
+    const userId = req.userId;
     const skip = parseInt(req.query.skip) || 0;
-    const limit = parseInt(req.query.limit) || null;  // null means no limit
-    const conditions = [];
+    const limit = parseInt(req.query.limit) || null;
 
-    // Utility function to parse and handle empty or null arrays
     const parseArray = value => (value && value !== '[]') ? value.split(',').map(item => item.trim()) : [];
 
-    // Add conditions if query parameters are provided and valid
+    const conditions = [];
+
     if (req.query.leadStage) conditions.push({ lead_stage: { [Op.in]: parseArray(req.query.leadStage) } });
     if (req.query.leadSource) conditions.push({ lead_source: { [Op.in]: parseArray(req.query.leadSource) } });
     if (req.query.teamMember) conditions.push({ team_member: { [Op.in]: parseArray(req.query.teamMember) } });
 
-    // If no conditions, fetch all data (no filter)
-    const whereClause = conditions.length > 0 ? { [Op.or]: conditions } : {};
+    // Combine userId with other conditions using Op.and
+    let whereClause = { userId: userId }; // base condition
 
-    console.log("whereClause =", whereClause);  // Debugging
+    if (conditions.length > 0) {
+      whereClause = {
+        [Op.and]: [
+          { userId: userId },
+          { [Op.or]: conditions }
+        ]
+      };
+    }
 
-    // Fetch leads based on whereClause
-    // Fetch paginated leads
+    console.log("whereClause =", JSON.stringify(whereClause));
+
     const leadDetails = await Leads.findAll({
       where: whereClause,
       offset: skip,
-      limit: limit
+      limit: limit,
     });
-    const leadDetailsCount = await Leads.count({ where: whereClause });
 
-    // Return result or message if no data is found
-    res.status(200).json({ "leadDetails": leadDetails, "leadCount": leadDetailsCount })
+    const leadDetailsCount = await Leads.count({
+      where: whereClause
+    });
+
+    res.status(200).json({
+      leadDetails,
+      leadCount: leadDetailsCount
+    });
+
   } catch (err) {
-    console.error("Error details:", err);  // Log the error
+    console.error("Error details:", err);
     res.status(500).json({ error: err.message });
   }
-
-
-
 };
+
 
 
 exports.getLeadSourceDetails = async (req, res) => {
