@@ -4,14 +4,13 @@ const { Op } = require('sequelize');
 const Leads = require("../../models/transactionModels/leadsModel")
 const LeadSource = require("../../models/updateModels/leadSourceSchema")
 const LeadStage = require("../../models/updateModels/leadStageSchema")
-const TeamMember =  require("../../models/updateModels/teamMembersSchema")
+const TeamMember = require("../../models/updateModels/teamMembersSchema")
 
 // Create
 exports.createLeadsDetails = async (req, res) => {
   try {
     const userId = req.userId;
     const {
-
       contact_name,
       contact_phone,
       contact_email,
@@ -150,6 +149,101 @@ exports.getLeadDetails = async (req, res) => {
   }
 };
 
+// ✅ Get Leads by ID
+exports.getLeadDetailsById = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+
+    const leadDetails = await Leads.findOne({ where: { id, userId } });
+
+    if (!leadDetails) {
+      return res.status(404).json({ error: "Material not found or unauthorized access." });
+    }
+
+    return res.status(200).json(leadDetails);
+  } catch (err) {
+    console.error("Error fetching material by ID:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Update Leads
+exports.updateLeadDetails = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params; // Primary key (assumed)
+    const {
+      contact_name,
+      contact_phone,
+      contact_email,
+      address,
+      customer_profession,
+      native_language,
+      lead_source,
+      lead_stage,
+      value_in_inr,
+      creation_date,
+      expected_date,
+      team_member,
+      last_interacted_on,
+      next_interacted_date,
+      remarks,
+      reason_for_lost_customers,
+    } = req.body;
+
+    const leadDetails = await Leads.findOne({ where: { id, userId } });
+
+    if (!leadDetails) {
+      return res.status(404).json({ error: "Material not found or unauthorized access." });
+    }
+
+    await leadDetails.update({
+      contact_name,
+      contact_phone,
+      contact_email,
+      address,
+      customer_profession,
+      native_language,
+      lead_source,
+      lead_stage,
+      value_in_inr,
+      creation_date,
+      expected_date,
+      team_member,
+      last_interacted_on,
+      next_interacted_date,
+      remarks,
+      reason_for_lost_customers,
+    });
+
+    return res.status(200).json({ message: "Material updated successfully.", leadDetails });
+  } catch (err) {
+    console.error("Error updating material:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Delete Leads
+exports.deleteLeadDetails = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params; // Primary key (assumed)
+
+    const deleted = await Leads.destroy({ where: { id, userId } });
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Material not found or unauthorized access." });
+    }
+
+    // await material.destroy();
+
+    return res.status(200).json({ message: "Material deleted successfully." });
+  } catch (err) {
+    console.error("Error deleting material:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
 
 
 exports.getLeadSourceDetails = async (req, res) => {
@@ -162,7 +256,6 @@ exports.getLeadSourceDetails = async (req, res) => {
   }
 };
 
-
 exports.getLeadStageDetails = async (req, res) => {
   try {
     const userId = req.userId;
@@ -172,9 +265,6 @@ exports.getLeadStageDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
-
-
 
 exports.getTeamMemberDetails = async (req, res) => {
   try {

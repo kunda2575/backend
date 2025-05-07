@@ -30,11 +30,10 @@ const Material = sequelize.define(
             type: DataTypes.INTEGER,
             allowNull: true
         }
-
     },
     {
         tableName: 'materials',  // Specify the table name
-        timestamps: false,  // We don't need createdAt or updatedAt for this model
+        timestamps: true,  // We need createdAt or updatedAt for this model
     }
 );
 

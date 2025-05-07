@@ -11,11 +11,20 @@ router.post('/', verifyToken, stockAvailability.createMaterial);
 // Get Material Details with filtering and pagination
 router.get('/', verifyToken, stockAvailability.getMaterialDetails);
 
-// For getting material master details (assuming it's a different endpoint)
+// Get Material Master Details (user-specific)
 router.get('/materialMaster', verifyToken, stockAvailability.getMaterialMasterDetails);
 
-// For getting unit type details
+// Get Unit Type Details (user-specific)
 router.get('/unitTypes', verifyToken, stockAvailability.getUnitTypeDetails);
+
+// ✅ Get Material by ID (user-specific)
+router.get('/:id', verifyToken, stockAvailability.getMaterialById);
+
+// ✅ Update Material (by ID)
+router.put('/:id', verifyToken, stockAvailability.updateMaterial);
+
+// ✅ Delete Material (by ID)
+router.delete('/:id', verifyToken, stockAvailability.deleteMaterial);
 
 // Export the router
 module.exports = router;

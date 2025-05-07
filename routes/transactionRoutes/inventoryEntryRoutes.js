@@ -16,8 +16,18 @@ router.get('/materialMaster', verifyToken, inventoryEntry.getMaterialMasterDetai
 
 // For getting unit type details
 router.get('/unitTypes', verifyToken, inventoryEntry.getUnitTypeDetails);
+
 // For getting vendor details
 router.get('/vendor', verifyToken, inventoryEntry.getVendorDetails);
+
+// ✅ Get Inventory by ID (user-specific)
+router.get('/:id', verifyToken, inventoryEntry.getInventoryById);
+
+// ✅ Update Inventory (by ID)
+router.put('/:id', verifyToken, inventoryEntry.updateInventory);
+
+// ✅ Delete Inventory (by ID)
+router.delete('/:id', verifyToken, inventoryEntry.deleteInventory);
 
 // Export the router
 module.exports = router;

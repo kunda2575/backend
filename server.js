@@ -31,8 +31,8 @@ const userMasterRoutes = require('./routes/updateRoutes/userRoutes')
 // transaction routes
 const leadTransaction = require("./routes/transactionRoutes/leadsRoutes")
 const stockAvailabilityRoutes = require('./routes/transactionRoutes/stockAvailabilityRoutes')
-const inventoryEntryRoutes = require('./routes/transactionRoutes/inventoryEntryRoutes')
-
+const inventoryEntryRoutes = require('./routes/transactionRoutes/inventoryEntryRoutes');
+const materialIssueRoutes = require('./routes/transactionRoutes/materialIssueRoutes');
 
 
 // Schemas
@@ -114,10 +114,11 @@ sqlDb()
     app.use('/api/userMaster',userMasterRoutes);
     app.use('/api/vendors',vendorRoutes);
 
-      //transaction
+    //transaction
     app.use('/api/leads',leadTransaction)
     app.use('/api/stocks',stockAvailabilityRoutes)
     app.use('/api/inventory',inventoryEntryRoutes)
+    app.use('/api/materialIssue',materialIssueRoutes)
 
     // ✅ Start Server
     app.listen(port, () => {
