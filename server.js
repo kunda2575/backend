@@ -33,7 +33,7 @@ const leadTransaction = require("./routes/transactionRoutes/leadsRoutes")
 const stockAvailabilityRoutes = require('./routes/transactionRoutes/stockAvailabilityRoutes')
 const inventoryEntryRoutes = require('./routes/transactionRoutes/inventoryEntryRoutes');
 const materialIssueRoutes = require('./routes/transactionRoutes/materialIssueRoutes');
-
+const expenditureRoutes = require('./routes/transactionRoutes/expenditureRoutes')
 
 // Schemas
 const { leadStage } = require('./models/updateModels/leadStageSchema');
@@ -63,7 +63,7 @@ const { fundPurpose } = require('./models/updateModels/fundPurposeSchema');
 const {leads}= require('./models/transactionModels/leadsModel')
 const {Material} =require('./models/transactionModels/stockAvailabilityModel')
 const {inventory_entry} = require('./models/transactionModels/inventoryEntryModel')
-
+const {expenditure}=require('./models/transactionModels/expenditureModel')
 
 // Routes
 const userRoutes = require("./routes/SignUpRoutes/signUpRoutes");
@@ -119,6 +119,7 @@ sqlDb()
     app.use('/api/stocks',stockAvailabilityRoutes)
     app.use('/api/inventory',inventoryEntryRoutes)
     app.use('/api/materialIssue',materialIssueRoutes)
+    app.use('/api/expenditure',expenditureRoutes)
 
     // ✅ Start Server
     app.listen(port, () => {

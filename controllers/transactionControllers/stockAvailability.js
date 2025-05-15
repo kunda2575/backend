@@ -145,34 +145,35 @@ exports.createMaterial = async (req, res) => {
 };
 
 // Get Material Details with filtering and pagination
+
 exports.getMaterialDetails = async (req, res) => {
   try {
     const userId = req.userId;
     const skip = parseInt(req.query.skip) || 0;
     const limit = parseInt(req.query.limit) || 10;
 
-    const conditions = [];
-    const parseArray = value => (value && value !== '[]') ? value.split(',').map(item => item.trim()) : [];
+    const filters = [];
+    const parseArray = (value) => value ? value.split(',') : [];
 
     if (req.query.material_id) {
-      conditions.push({ material_id: { [Op.in]: parseArray(req.query.material_id) } });
+      filters.push({ material_id: { [Op.in]: parseArray(req.query.material_id) } });
     }
 
     if (req.query.materialName) {
-      conditions.push({ material_name: { [Op.like]: `%${req.query.materialName}%` } });
+      filters.push({ material_name: { [Op.like]: `%${req.query.materialName}%` } });
     }
 
     if (req.query.unit) {
-      conditions.push({ unit_type: req.query.unit });
+      filters.push({ unit_type: { [Op.in]: parseArray(req.query.unit) } });
     }
 
-    let whereClause = { userId: userId };
+    let whereClause = { userId };
 
-    if (conditions.length > 0) {
+    if (filters.length > 0) {
       whereClause = {
         [Op.and]: [
-          { userId: userId },
-          { [Op.or]: conditions }
+          { userId },
+          { [Op.or]: filters }
         ]
       };
     }
@@ -180,7 +181,7 @@ exports.getMaterialDetails = async (req, res) => {
     const materialDetails = await Material.findAll({
       where: whereClause,
       offset: skip,
-      limit: limit,
+      limit,
     });
 
     const materialDetailsCount = await Material.count({ where: whereClause });
@@ -188,10 +189,9 @@ exports.getMaterialDetails = async (req, res) => {
     return res.status(200).json({ materialDetails, materialDetailsCount });
   } catch (err) {
     console.error("Error fetching material details:", err);
-    return res.status(500).json({ error: "Failed to fetch material details. Please try again later." });
+    return res.status(500).json({ error: "Failed to fetch material details." });
   }
 };
-
 // ✅ Get Material by ID
 exports.getMaterialById = async (req, res) => {
   try {

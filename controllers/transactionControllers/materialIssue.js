@@ -1,9 +1,9 @@
 const { Op } = require('sequelize');
-const MaterialIssue = require("../../models/transactionModels/materialIssueModel")
+const MaterialIssue = require("../../models/transactionModels/materialIssueModel");
 const materialMaster = require("../../models/updateModels/materialMasterSchema");
 const unitType = require("../../models/updateModels/unitTypeSchema");
 
-// Create MaterialIssue
+// ✅ Create MaterialIssue
 exports.createMaterialIssue = async (req, res) => {
   try {
     const userId = req.userId;
@@ -11,7 +11,14 @@ exports.createMaterialIssue = async (req, res) => {
       return res.status(400).json({ error: "User ID is required." });
     }
 
-    const { material_name, unit_type, quantity_issued, issued_by, issued_to, issue_date } = req.body;
+    const {
+      material_name,
+      unit_type,
+      quantity_issued,
+      issued_by,
+      issued_to,
+      issue_date
+    } = req.body;
 
     const newMaterialIssue = await MaterialIssue.create({
       material_name,
@@ -25,57 +32,36 @@ exports.createMaterialIssue = async (req, res) => {
 
     return res.status(201).json(newMaterialIssue);
   } catch (err) {
-    console.error("Error creating material:", err);
+    console.error("❌ Error creating material:", err);
     return res.status(500).json({ error: err.message });
   }
 };
 
-// Get MaterialIssue Details with filtering and pagination
-exports.getMaterialIssueDetails = async (req, res) => {
-  try {
+// ✅ Get MaterialIssue Details with filtering and pagination
+exports. getMaterialIssueDetails = async (req, res) => {
+    const { skip = 0, limit = 10, material_name, unit_type } = req.query;
     const userId = req.userId;
-    const skip = parseInt(req.query.skip) || 0;
-    const limit = parseInt(req.query.limit) || 10;
 
-    const conditions = [];
-    const parseArray = value => (value && value !== '[]') ? value.split(',').map(item => item.trim()) : [];
+    const whereClause = { userId };
+    if (material_name) whereClause.material_name = material_name;
+    if (unit_type) whereClause.unit_type = unit_type;
 
-    if (req.query.materialName) {
-      conditions.push({ material_name: { [Op.in]: parseArray(req.query.materialName) } });
+    try {
+        const [materialDetails, materialDetailsCount] = await Promise.all([
+            MaterialIssue.findAll({
+                where: whereClause,
+                offset: parseInt(skip),
+                limit: parseInt(limit),
+                order: [['issue_date', 'DESC']],
+            }),
+            MaterialIssue.count({ where: whereClause }),
+        ]);
+
+        res.status(200).json({ materialDetails, materialDetailsCount });
+    } catch (error) {
+        console.error("❌ Failed to fetch material issues:", error);
+        res.status(500).json({ error: 'Server error' });
     }
-    
-    // if (req.query.materialName) {
-    //   conditions.push({ material_name: { [Op.like]: `%${req.query.materialName}%` } });
-    // }
-
-    if (req.query.unit) {
-      conditions.push({ unit_type: req.query.unit });
-    }
-
-    let whereClause = { userId: userId };
-
-    if (conditions.length > 0) {
-      whereClause = {
-        [Op.and]: [
-          { userId: userId },
-          { [Op.or]: conditions }
-        ]
-      };
-    }
-
-    const materialIssueDetails = await MaterialIssue.findAll({
-      where: whereClause,
-      offset: skip,
-      limit: limit,
-    });
-
-    const materialDetailsCount = await MaterialIssue.count({ where: whereClause });
-
-    return res.status(200).json({ materialIssueDetails, materialDetailsCount });
-  } catch (err) {
-    console.error("Error fetching material details:", err);
-    return res.status(500).json({ error: "Failed to fetch material details. Please try again later." });
-  }
 };
 
 // ✅ Get MaterialIssue by ID
@@ -92,7 +78,7 @@ exports.getMaterialIssueById = async (req, res) => {
 
     return res.status(200).json(material);
   } catch (err) {
-    console.error("Error fetching material by ID:", err);
+    console.error("❌ Error fetching material by ID:", err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -101,8 +87,15 @@ exports.getMaterialIssueById = async (req, res) => {
 exports.updateMaterialIssue = async (req, res) => {
   try {
     const userId = req.userId;
-    const { id } = req.params; // Primary key (assumed)
-    const { material_name, unit_type, quantity_issued, issued_by, issued_to, issue_date } = req.body;
+    const { id } = req.params;
+    const {
+      material_name,
+      unit_type,
+      quantity_issued,
+      issued_by,
+      issued_to,
+      issue_date
+    } = req.body;
 
     const material = await MaterialIssue.findOne({ where: { id, userId } });
 
@@ -121,7 +114,7 @@ exports.updateMaterialIssue = async (req, res) => {
 
     return res.status(200).json({ message: "MaterialIssue updated successfully.", material });
   } catch (err) {
-    console.error("Error updating material:", err);
+    console.error("❌ Error updating material:", err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -130,7 +123,7 @@ exports.updateMaterialIssue = async (req, res) => {
 exports.deleteMaterialIssue = async (req, res) => {
   try {
     const userId = req.userId;
-    const { id } = req.params; // Primary key (assumed)
+    const { id } = req.params;
 
     const deleted = await MaterialIssue.destroy({ where: { id, userId } });
 
@@ -138,17 +131,14 @@ exports.deleteMaterialIssue = async (req, res) => {
       return res.status(404).json({ error: "MaterialIssue not found or unauthorized access." });
     }
 
-    // await material.destroy();
-
     return res.status(200).json({ message: "MaterialIssue deleted successfully." });
   } catch (err) {
-    console.error("Error deleting material:", err);
+    console.error("❌ Error deleting material:", err);
     return res.status(500).json({ error: err.message });
   }
 };
 
-
-// Get Material Master Details (user-specific)
+// ✅ Get Material Master Details (user-specific)
 exports.getMaterialMasterDetails = async (req, res) => {
   const userId = req.userId;
   if (!userId) {
@@ -163,7 +153,7 @@ exports.getMaterialMasterDetails = async (req, res) => {
   }
 };
 
-// Get Unit Type Details (user-specific)
+// ✅ Get Unit Type Details (user-specific)
 exports.getUnitTypeDetails = async (req, res) => {
   const userId = req.userId;
   if (!userId) {
@@ -177,4 +167,3 @@ exports.getUnitTypeDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
