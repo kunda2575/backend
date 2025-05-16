@@ -116,20 +116,13 @@ exports.getExpenditureDetails = async (req, res) => {
 };
 // GET /api/expenditures/:id
 exports.getExpenditureById = async (req, res) => {
-  const { id } = req.params;
-
-  // Ensure id is a valid number
-  if (!/^\d+$/.test(id)) {
-    return res.status(400).json({ error: "Expenditure ID is invalid or missing" });
-  }
-
+  
   try {
-    const expenditure = await Expenditure.findOne({
-      where: {
-        id: parseInt(id, 10),
-        userId: req.user.userId, // ensure you're using user from JWT
-      }
-    });
+    const userId = req.userId;
+    const { id } = req.params;
+
+
+    const expenditure = await Expenditure.findOne({ where:{id,userId}});
 
     if (!expenditure) {
       return res.status(404).json({ error: "Expenditure not found" });
@@ -148,15 +141,15 @@ exports.updateExpenditure = async (req, res) => {
     console.log("req.params.id:", req.params.id);
     console.log("req.body:", req.body);
 
-    if (!req.user || !req.user.userId) {
-      return res.status(401).json({ error: "Unauthorized: Missing user information" });
-    }
-    const userId = req.user.userId;
+    // if (!req.user || !req.user.userId) {
+    //   return res.status(401).json({ error: "Unauthorized: Missing user information" });
+    // }
+    const userId = req.userId;
     const { id } = req.params;
 
-    if (!/^\d+$/.test(id)) {
-      return res.status(400).json({ error: "Invalid expenditure ID" });
-    }
+    // if (!/^\d+$/.test(id)) {
+    //   return res.status(400).json({ error: "Invalid expenditure ID" });
+    // }
 
     const {
       date,
