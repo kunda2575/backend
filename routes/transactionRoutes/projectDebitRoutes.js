@@ -11,14 +11,11 @@ router.post('/', verifyToken, projectDebit.createProjectDebit);
 // Get projectDebit master details
 router.get('/', verifyToken, projectDebit.getProjectDebitDetails);
 
-// router.get('/', projectDebitController.getAllExpenditures);
 
 
 // Get vendor master details
 router.get('/vendor',verifyToken,  projectDebit.getVendorDetails);
 
-// Get expense master details
-router.get('/expense', verifyToken, projectDebit.getExpenseDetails);
 
 // Get payment mode master details
 router.get('/paymentMode', verifyToken, projectDebit.getPaymentModeDetails);

@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const ProjectDebit = require('../../models/transactionModels/projectDebitModel');
 const Vendor = require('../../models/updateModels/vendorMasterSchema');
-const Expense = require('../../models/updateModels/expenseCategoryMasterSchema');
+const PayedTo = require('../../models/updateModels/vendorMasterSchema');
 const PaymentMode = require('../../models/updateModels/paymentModeMasterSchema');
 const PaymentBank = require('../../models/updateModels/bankMasterSchema');
 
@@ -67,9 +67,9 @@ exports.getProjectDebitDetails = async (req, res) => {
             filters.push({ vendor_name: { [Op.in]: parseArray(req.query.vendor_name) } });
             console.log("Vendor name filter applied:", req.query.vendor_name);
         }
-        if (req.query.expense_head && req.query.expense_head !== "") {
-            filters.push({ expense_head: { [Op.in]: parseArray(req.query.expense_head) } });
-            console.log("Expense head filter applied:", req.query.expense_head);
+        if (req.query.payed_to && req.query.payed_to !== "") {
+            filters.push({ payed_to: { [Op.in]: parseArray(req.query.payed_to) } });
+            console.log("PayedTo head filter applied:", req.query.payed_to);
         }
         if (req.query.payment_mode && req.query.payment_mode !== "") {
             filters.push({ payment_mode: { [Op.in]: parseArray(req.query.payment_mode) } });
@@ -102,7 +102,7 @@ exports.getProjectDebitDetails = async (req, res) => {
         });
 
         if (!projectDebitDetails.length) {
-            return res.status(404).json({ error: "No projectDebits found." });
+            return res.status(404).json({ error: "No project Debits found." });
         }
 
         const projectDebitDetailsCount = await ProjectDebit.count({
@@ -217,8 +217,8 @@ exports.getPayTo = async (req, res) => {
         const userId = req.userId;
         if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-        const vendorDetails = await Vendor.findAll({ where: { userId } });
-        res.json(vendorDetails);
+        const payedDetails = await PayedTo.findAll({ where: { userId } });
+        res.json(payedDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -236,12 +236,12 @@ exports.getVendorDetails = async (req, res) => {
 };
 
 // ✅ Get expense details (user-specific)
-exports.getExpenseDetails = async (req, res) => {
+exports.getPayedToDetails = async (req, res) => {
     try {
         const userId = req.userId;
         if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-        const expenseDetails = await Expense.findAll({ where: { userId } });
+        const expenseDetails = await PayedTo.findAll({ where: { userId } });
         res.json(expenseDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
