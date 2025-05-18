@@ -34,7 +34,8 @@ const stockAvailabilityRoutes = require('./routes/transactionRoutes/stockAvailab
 const inventoryEntryRoutes = require('./routes/transactionRoutes/inventoryEntryRoutes');
 const materialIssueRoutes = require('./routes/transactionRoutes/materialIssueRoutes');
 const expenditureRoutes = require('./routes/transactionRoutes/expenditureRoutes')
-
+const projectCreditsRoutes = require('./routes/transactionRoutes/projectCreditsRoutes')
+const projectDebits = require('./routes/transactionRoutes/projectDebitRoutes')
 // Schemas
 const { leadStage } = require('./models/updateModels/leadStageSchema');
 const { leadSource } = require('./models/updateModels/leadSourceSchema');
@@ -64,7 +65,8 @@ const {leads}= require('./models/transactionModels/leadsModel')
 const {Material} =require('./models/transactionModels/stockAvailabilityModel')
 const {inventory_entry} = require('./models/transactionModels/inventoryEntryModel')
 const {expenditure}=require('./models/transactionModels/expenditureModel')
-
+const {projectCredits}=require('./models/transactionModels/projectCreditsModel')
+const {projectDebit}=require('./models/transactionModels/projectDebitModel')
 // Routes
 const userRoutes = require("./routes/SignUpRoutes/signUpRoutes");
 
@@ -120,6 +122,10 @@ sqlDb()
     app.use('/api/inventory',inventoryEntryRoutes)
     app.use('/api/materialIssue',materialIssueRoutes)
     app.use('/api/expenditure',expenditureRoutes)
+    app.use('/api/projectCredit',projectCreditsRoutes)
+    app.use('/api/projectDebit',projectDebits)
+
+// app.use("/uploads", express.static("uploads"));
 
     // ✅ Start Server
     app.listen(port, () => {
