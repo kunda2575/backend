@@ -40,7 +40,7 @@ const Expenditure = sequelize.define('Expenditure', {
     },
     payment_evidence: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     userId: {
         type: DataTypes.INTEGER,

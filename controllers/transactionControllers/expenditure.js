@@ -10,6 +10,7 @@ exports.createExpenditure = async (req, res) => {
     try {
         const userId = req.userId;
         if (!userId) return res.status(400).json({ error: "User ID is required." });
+//  const payment_reference = req.file ? req.file.filename : null;
 
         const {
             date,
