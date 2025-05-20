@@ -37,30 +37,68 @@ exports.createMaterialIssue = async (req, res) => {
   }
 };
 
-// ✅ Get MaterialIssue Details with filtering and pagination
-exports. getMaterialIssueDetails = async (req, res) => {
-    const { skip = 0, limit = 10, material_name, unit_type } = req.query;
-    const userId = req.userId;
-
-    const whereClause = { userId };
-    if (material_name) whereClause.material_name = material_name;
-    if (unit_type) whereClause.unit_type = unit_type;
-
+exports.getMaterialIssuesDetails = async (req, res) => {
     try {
-        const [materialDetails, materialDetailsCount] = await Promise.all([
-            MaterialIssue.findAll({
-                where: whereClause,
-                offset: parseInt(skip),
-                limit: parseInt(limit),
-                order: [['issue_date', 'DESC']],
-            }),
-            MaterialIssue.count({ where: whereClause }),
-        ]);
+        const userId = req.userId;
+        console.log("Decoded JWT payload:", req.userId);  // Ensure userId is present
 
-        res.status(200).json({ materialDetails, materialDetailsCount });
-    } catch (error) {
-        console.error("❌ Failed to fetch material issues:", error);
-        res.status(500).json({ error: 'Server error' });
+        if (!userId) {
+            return res.status(400).json({ error: "User ID is required." });
+        }
+
+        const skip = parseInt(req.query.skip) || 0;
+        const limit = parseInt(req.query.limit) || 10;
+        console.log("Pagination params - skip:", skip, "limit:", limit);
+
+        const filters = [];
+        const parseArray = (value) => value ? value.split(',') : [];
+
+        // Log the filters applied
+        if (req.query.material_name && req.query.material_name !== "") {
+            filters.push({ material_name: { [Op.in]: parseArray(req.query.material_name) } });
+            console.log("material  name filter applied:", req.query.material_name);
+        }
+        if (req.query.unit_type && req.query.unit_type !== "") {
+            filters.push({ unit_type: { [Op.in]: parseArray(req.query.unit_type) } });
+            console.log("unit type  filter applied:", req.query.unit_type);
+        }
+       
+        console.log("Filters applied:", filters);
+
+        let whereClause = { userId };
+        if (filters.length > 0) {
+            whereClause = {
+                [Op.and]: [
+                    { userId },
+                    { [Op.or]: filters }
+                ]
+            };
+        }
+
+        console.log("Final where clause:", whereClause);
+
+        const materialIssuesDetails = await MaterialIssue.findAll({
+            where: whereClause,
+            offset: skip,
+            limit: limit,
+            logging: console.log
+        });
+
+        if (!materialIssuesDetails.length) {
+            return res.status(404).json({ error: "No materialIssuess found." });
+        }
+
+        const materialIssuesDetailsCount = await MaterialIssue.count({
+            where: whereClause
+        });
+
+        return res.status(200).json({
+            materialIssuesDetails,
+            materialIssuesDetailsCount
+        });
+    } catch (err) {
+        console.error("Error fetching materialIssues details:", err.message, err.stack);
+        return res.status(500).json({ error: "Failed to fetch materialIssues details." });
     }
 };
 

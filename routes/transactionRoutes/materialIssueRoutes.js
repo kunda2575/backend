@@ -9,7 +9,7 @@ const materialIssue  = require('../../controllers/transactionControllers/materia
 router.post('/', verifyToken, materialIssue.createMaterialIssue);
 
 // Get Material Details with filtering and pagination
-router.get('/', verifyToken, materialIssue.getMaterialIssueDetails);
+router.get('/', verifyToken, materialIssue.getMaterialIssuesDetails);
 
 // Get Material Master Details (user-specific)
 router.get('/materialMaster', verifyToken, materialIssue.getMaterialMasterDetails);

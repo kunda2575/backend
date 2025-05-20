@@ -102,6 +102,7 @@ exports.getProjectCreditsDetails = async (req, res) => {
         return res.status(500).json({ error: "Failed to fetch projectCredits details." });
     }
 };
+
 // GET /api/projectCreditss/:id
 exports.getProjectCreditsById = async (req, res) => {
   

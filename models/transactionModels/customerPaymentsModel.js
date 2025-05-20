@@ -77,7 +77,7 @@ const CustomerPayments = sequelize.define('CustomerPayments', {
         allowNull: true
     },
     flat_hand_over_date: {
-        type: DataTypes.STRING,
+        type: DataTypes.DATEONLY,
         allowNull: true
     },
     flat_area: {
