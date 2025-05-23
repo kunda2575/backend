@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../../middleware/verfiyToken');
-const upload = require('../../middleware/upload');
+
 // Import controller functions
 const expenditure = require('../../controllers/transactionControllers/expenditure');
 

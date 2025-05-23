@@ -6,7 +6,21 @@ const verifyToken = require('../../middleware/verfiyToken');
 const inventoryEntry = require('../../controllers/transactionControllers/inventoryEntry');
 
 // Create Inventory
-router.post('/', verifyToken, inventoryEntry.createInventory);
+
+
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" }); // or configure storage
+
+router.post('/',  upload.array("invoice_attachment", 5),verifyToken, inventoryEntry.createInventoryEntry);
+
+
+// router.post(
+//   '/',
+//   verifyToken,
+//   inventoryEntry.upload.array('invoice_attachment', 5),
+//   inventoryEntry.createInventoryEntry
+// );
+
 
 // Get Inventory Details with filtering and pagination
 router.get('/', verifyToken, inventoryEntry.getInventaryDetails);
@@ -23,8 +37,12 @@ router.get('/vendor', verifyToken, inventoryEntry.getVendorDetails);
 // ✅ Get Inventory by ID (user-specific)
 router.get('/:id', verifyToken, inventoryEntry.getInventoryById);
 
-// ✅ Update Inventory (by ID)
-router.put('/:id', verifyToken, inventoryEntry.updateInventory);
+// // ✅ Update Inventory (by ID)
+// router.put('/:id', verifyToken, inventoryEntry.updateInventory);
+
+
+router.put('/:id', upload.array("invoice_attachment", 5), inventoryEntry.updateInventory);
+
 
 // ✅ Delete Inventory (by ID)
 router.delete('/:id', verifyToken, inventoryEntry.deleteInventory);

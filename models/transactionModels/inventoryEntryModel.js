@@ -24,7 +24,7 @@ const { DataTypes } = require('sequelize');
       invoice_number: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true
+        // unique: true
       },
       invoice_date: {
         type: DataTypes.DATEONLY,

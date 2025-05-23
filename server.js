@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { sqlDb } = require("./config/db");
+const path = require('path');
 
 //  update masters
 const blocksRoutes = require('./routes/updateRoutes/blockRoutes');
@@ -128,6 +129,13 @@ sqlDb()
     app.use('/api/projectDebit',projectDebits)
     app.use('/api/customerPayments',customerPaymentRoutes)
     
+
+// Make sure body parser is added
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve the uploads folder statically at /uploads URL path
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
     // ✅ Start Server
     app.listen(port, () => {
