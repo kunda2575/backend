@@ -5,15 +5,15 @@ const {sequelize}=require('../../config/db')
 
 const CustomerMaster = sequelize.define(
     'customer_master',{
-        id: {
-            type: DataTypes.INTEGER,
+        // id: {
+        //     type: DataTypes.INTEGER,
+        //     autoIncrement: true,
+        //     primaryKey: true
+        // },
+        customerId:{
+            type:DataTypes.INTEGER,
             autoIncrement: true,
             primaryKey: true
-        },
-        customerId:{
-            type:DataTypes.STRING,
-            allowNull :false,
-            unique: true
         },
         customerName:{
             type:DataTypes.STRING,

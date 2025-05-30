@@ -26,13 +26,13 @@ dialectOptions:{
   }
 },
 
-    // logging: console.log, // ✅ Enables SQL query logging
-    // pool: {
-    //   max: 10,
-    //   min: 0, // ✅ Set min to 0 to allow idle connections to close
-    //   acquire: 30000,
-    //   idle: 10000,
-    // },
+    logging: console.log, // ✅ Enables SQL query logging
+    pool: {
+      max: 10,
+      min: 0, // ✅ Set min to 0 to allow idle connections to close
+      acquire: 60000, // increased timeout
+      idle: 10000,
+    },
   }
 );
 

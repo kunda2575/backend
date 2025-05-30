@@ -135,7 +135,28 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve the uploads folder statically at /uploads URL path
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
+// Serve static files (like PDFs/images) from uploads folder
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes = {
+      '.pdf': 'application/pdf',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif'
+    };
+
+    const mimeType = mimeTypes[ext] || 'application/octet-stream';
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', 'inline'); // 👈 Important: show in browser
+  }
+}));
+
 
     // ✅ Start Server
     app.listen(port, () => {

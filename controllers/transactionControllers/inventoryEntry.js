@@ -113,8 +113,7 @@ exports.getInventaryDetails = async (req, res) => {
     const updatedProperties = inventoryDetails.map(property => ({
       ...property.toJSON(),
       invoice_attachment: property.invoice_attachment
-        ? property.invoice_attachment.split(",").map(img => `http://localhost:2026/uploads/${img}`)
-        : []
+        ? property.invoice_attachment.split(",").map(img => `http://localhost:2026/uploads/${img}`): []
     }));
 
     const inventoryDetailsCount = await inventoryEntry.count({ where: whereClause });

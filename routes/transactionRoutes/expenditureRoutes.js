@@ -4,9 +4,15 @@ const verifyToken = require('../../middleware/verfiyToken');
 
 // Import controller functions
 const expenditure = require('../../controllers/transactionControllers/expenditure');
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" }); // or use diskStorage
 
-// Create expenditure
-router.post('/', verifyToken, expenditure.createExpenditure);
+router.post(
+  '/',
+  expenditure.uploadFields,
+  verifyToken,
+  expenditure.createExpenditure
+);
 
 // Get expenditure master details
 router.get('/', verifyToken, expenditure.getExpenditureDetails);

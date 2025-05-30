@@ -11,7 +11,7 @@ const inventoryEntry = require('../../controllers/transactionControllers/invento
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" }); // or configure storage
 
-router.post('/',  upload.array("invoice_attachment", 5),verifyToken, inventoryEntry.createInventoryEntry);
+router.post('/',  upload.array("invoice_attachment", 1),verifyToken, inventoryEntry.createInventoryEntry);
 
 
 // router.post(

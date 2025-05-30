@@ -5,9 +5,9 @@ const CustomerMaster = require('../../models/updateModels/customerMasterSchema')
 exports.createCustomerDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        const { customerId, customerName, customerPhone, customerEmail, customerAddress, customerProfession, languagesKnown, projectNameBlock, flatNo } = req.body
+        const {  customerName, customerPhone, customerEmail, customerAddress, customerProfession, languagesKnown, projectNameBlock, flatNo } = req.body
         const newCustomerDetails = await CustomerMaster.create({
-            customerId, customerName, customerPhone, customerEmail, customerAddress, customerProfession, languagesKnown, projectNameBlock, flatNo, userId
+             customerName, customerPhone, customerEmail, customerAddress, customerProfession, languagesKnown, projectNameBlock, flatNo, userId
         })
         res.status(201).json(newCustomerDetails)
 
@@ -31,13 +31,13 @@ exports.getCustomerDetails = async (req, res) => {
 exports.updateCustomersDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        const { id } = req.params;
-        const { customerId, customerName, customerPhone, customerEmail, customerAddress, customerProfession, languagesKnown, projectNameBlock, flatNo } = req.body
-        const customerDetails = await CustomerMaster.findOne({ where: { id, userId } })
+        const { customerId } = req.params;
+        const {  customerName, customerPhone, customerEmail, customerAddress, customerProfession, languagesKnown, projectNameBlock, flatNo } = req.body
+        const customerDetails = await CustomerMaster.findOne({ where: { customerId, userId } })
         if (!customerDetails)
             return res.status(404).json({ error: "Customers not found" });
 
-        customerDetails.customerId = customerId;
+        // customerDetails.customerId = customerId;
         customerDetails.customerName = customerName;
         customerDetails.customerPhone = customerPhone;
         customerDetails.customerEmail = customerEmail;
@@ -58,8 +58,8 @@ exports.updateCustomersDetails = async (req, res) => {
 exports.deleteCustomersDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        const { id } = req.params;
-        const deleted = await CustomerMaster.destroy({ where: { id, userId } })
+        const { customerId } = req.params;
+        const deleted = await CustomerMaster.destroy({ where: { customerId, userId } })
         if (!deleted) return res.status(404).json({ error: "Customer Details not found" });
         res.json({ message: "Customer Details deleted successfully" });
     } catch (err) {
