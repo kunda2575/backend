@@ -5,9 +5,9 @@ const EmployeeMaster =require('../../models/updateModels/employeeMasterSchema');
 exports.createEmployeeDetails = async (req,res) =>{
     try {
         const userId = req.userId;
-        const{employeeID,employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department}=req.body
+        const{employeeID,employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department,emp_address}=req.body
         const newEmployeeDetails =await EmployeeMaster.create({
-            employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department,userId,employeeID})
+            employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department,emp_address,userId,employeeID})
         res.status(201).json(newEmployeeDetails)
 
     } catch (err) {
@@ -31,7 +31,7 @@ exports.updateEmployeesDetails = async (req,res)=>{
     try {
         const userId = req.userId; 
         const{id}=req.params;
-        const{employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department}=req.body
+        const{employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department,emp_address}=req.body
        const employeeDetails =  await EmployeeMaster.findOne({ where: {id, userId } })
        if(!employeeDetails)
         return res.status(404).json({ error: "Employees not found" });
@@ -44,6 +44,8 @@ exports.updateEmployeesDetails = async (req,res)=>{
        employeeDetails.idProof1 = idProof1;
        employeeDetails.employeeSalary =employeeSalary ;
        employeeDetails.department = department;
+       employeeDetails.department = department;
+       employeeDetails.emp_address = emp_address;
             await employeeDetails.save()
             res.status(201).json(employeeDetails)
     } catch (err) {
