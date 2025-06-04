@@ -31,7 +31,7 @@ exports.updateBankDetails = async (req, res) => {
     const { id } = req.params;
     const { bankName, ifscCode, branch } = req.body;
     const bankDetails = await BankMaster.findOne({ where: { id, userId } });
-    if (!bankDetails) return res.status(404).json({ error: "Builder not found" });
+    if (!bankDetails) return res.status(404).json({ error: "Bank not found" });
 
     bankDetails.bankName = bankName
     bankDetails.ifscCode = ifscCode

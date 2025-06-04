@@ -3,6 +3,7 @@ const ProjectCredit = require('../../models/transactionModels/projectCreditsMode
 const Source = require('../../models/updateModels/fundSourceSchema');
 const Purpose = require('../../models/updateModels/fundPurposeSchema');
 const PaymentMode = require('../../models/updateModels/paymentModeMasterSchema');
+const depositBank = require('../../models/updateModels/bankMasterSchema');
 
 // ✅ Create projectCredits
 exports.createProjectCredits = async (req, res) => {
@@ -13,7 +14,8 @@ exports.createProjectCredits = async (req, res) => {
         const {
             date,
             source,
-            deposit_bank_purpose,
+            deposit_bank,
+            purpose,
             amount_inr,
             payment_mode,
 
@@ -22,7 +24,8 @@ exports.createProjectCredits = async (req, res) => {
         const newProjectCredits = await ProjectCredit.create({
             date,
             source,
-            deposit_bank_purpose,
+            deposit_bank,
+            purpose,
             amount_inr,
             payment_mode,
             userId
@@ -55,15 +58,19 @@ exports.getProjectCreditsDetails = async (req, res) => {
             filters.push({ source: { [Op.in]: parseArray(req.query.source) } });
             console.log("Source name filter applied:", req.query.source);
         }
-        if (req.query.deposit_bank_purpose && req.query.deposit_bank_purpose !== "") {
-            filters.push({ deposit_bank_purpose: { [Op.in]: parseArray(req.query.deposit_bank_purpose) } });
-            console.log("Purpose head filter applied:", req.query.deposit_bank_purpose);
+        if (req.query.purpose && req.query.purpose !== "") {
+            filters.push({ purpose: { [Op.in]: parseArray(req.query.purpose) } });
+            console.log("Purpose  filter applied:", req.query.purpose);
+        }
+        if (req.query.deposit_bank && req.query.deposit_bank !== "") {
+            filters.push({ deposit_bank: { [Op.in]: parseArray(req.query.deposit_bank) } });
+            console.log("Deposit Bank filter applied:", req.query.deposit_bank);
         }
         if (req.query.payment_mode && req.query.payment_mode !== "") {
             filters.push({ payment_mode: { [Op.in]: parseArray(req.query.payment_mode) } });
             console.log("Payment mode filter applied:", req.query.payment_mode);
         }
-       
+
         console.log("Filters applied:", filters);
 
         let whereClause = { userId };
@@ -105,73 +112,75 @@ exports.getProjectCreditsDetails = async (req, res) => {
 
 // GET /api/projectCreditss/:id
 exports.getProjectCreditsById = async (req, res) => {
-  
-  try {
-    const userId = req.userId;
-    const { id } = req.params;
+
+    try {
+        const userId = req.userId;
+        const { id } = req.params;
 
 
-    const projectCredits = await ProjectCredit.findOne({ where:{id,userId}});
+        const projectCredits = await ProjectCredit.findOne({ where: { id, userId } });
 
-    if (!projectCredits) {
-      return res.status(404).json({ error: "ProjectCredits not found" });
+        if (!projectCredits) {
+            return res.status(404).json({ error: "ProjectCredits not found" });
+        }
+
+        res.json(projectCredits);
+    } catch (error) {
+        console.error("Error fetching projectCredits:", error);
+        res.status(500).json({ error: "Server error" });
     }
-
-    res.json(projectCredits);
-  } catch (error) {
-    console.error("Error fetching projectCredits:", error);
-    res.status(500).json({ error: "Server error" });
-  }
 };
 exports.updateProjectCredits = async (req, res) => {
-  try {
-    console.log("Update projectCredits called");
-    console.log("req.user:", req.user);
-    console.log("req.params.id:", req.params.id);
-    console.log("req.body:", req.body);
+    try {
+        console.log("Update projectCredits called");
+        console.log("req.user:", req.user);
+        console.log("req.params.id:", req.params.id);
+        console.log("req.body:", req.body);
 
-    // if (!req.user || !req.user.userId) {
-    //   return res.status(401).json({ error: "Unauthorized: Missing user information" });
-    // }
-    const userId = req.userId;
-    const { id } = req.params;
+        // if (!req.user || !req.user.userId) {
+        //   return res.status(401).json({ error: "Unauthorized: Missing user information" });
+        // }
+        const userId = req.userId;
+        const { id } = req.params;
 
-    // if (!/^\d+$/.test(id)) {
-    //   return res.status(400).json({ error: "Invalid projectCredits ID" });
-    // }
+        // if (!/^\d+$/.test(id)) {
+        //   return res.status(400).json({ error: "Invalid projectCredits ID" });
+        // }
 
-    const {
-      date,
-      source,
-      deposit_bank_purpose,
-      amount_inr,
-      invoice_number,
-      payment_mode,
-     
-    } = req.body;
+        const {
+            date,
+            source,
+            deposit_bank,
+            purpose,
+            amount_inr,
+            invoice_number,
+            payment_mode,
 
-    const projectCreditsToUpdate = await ProjectCredit.findOne({ where: { id, userId } });
+        } = req.body;
 
-    if (!projectCreditsToUpdate) {
-      return res.status(404).json({ error: "ProjectCredits not found or unauthorized access." });
+        const projectCreditsToUpdate = await ProjectCredit.findOne({ where: { id, userId } });
+
+        if (!projectCreditsToUpdate) {
+            return res.status(404).json({ error: "ProjectCredits not found or unauthorized access." });
+        }
+
+        await projectCreditsToUpdate.update({
+            date,
+            source,
+            deposit_bank,
+            purpose,
+            amount_inr,
+            invoice_number,
+            payment_mode,
+
+        });
+
+        return res.status(200).json({ message: "ProjectCredits updated successfully.", data: projectCreditsToUpdate });
+
+    } catch (err) {
+        console.error("Error updating projectCredits:", err.message, err.stack);
+        return res.status(500).json({ error: err.message });
     }
-
-    await projectCreditsToUpdate.update({
-      date,
-      source,
-      deposit_bank_purpose,
-      amount_inr,
-      invoice_number,
-      payment_mode,
-     
-    });
-
-    return res.status(200).json({ message: "ProjectCredits updated successfully.", data: projectCreditsToUpdate });
-
-  } catch (err) {
-    console.error("Error updating projectCredits:", err.message, err.stack);
-    return res.status(500).json({ error: err.message });
-  }
 };
 
 
@@ -184,12 +193,12 @@ exports.deleteProjectCredits = async (req, res) => {
         const deleted = await ProjectCredit.destroy({ where: { id, userId } });
 
         if (!deleted) {
-            return res.status(404).json({ error: "ProjectCredits not found or unauthorized access." });
+            return res.status(404).json({ error: "Project Credits not found or unauthorized access." });
         }
 
-        return res.status(200).json({ message: "ProjectCredits deleted successfully." });
+        return res.status(200).json({ message: "Project Credits deleted successfully." });
     } catch (err) {
-        console.error("Error deleting projectCredits:", err);
+        console.error("Error deleting project Credits:", err);
         return res.status(500).json({ error: err.message });
     }
 };
@@ -215,6 +224,19 @@ exports.getPurposeDetails = async (req, res) => {
 
         const purposeDetails = await Purpose.findAll({ where: { userId } });
         res.json(purposeDetails);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// ✅ Get  deposit_bank  details (user-specific)
+exports.getDepositeBankDetails = async (req, res) => {
+    try {
+        const userId = req.userId;
+        if (!userId) return res.status(400).json({ error: "User ID not found" });
+
+        const depositeBankDetails = await depositBank.findAll({ where: { userId } });
+        res.json(depositeBankDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

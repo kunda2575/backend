@@ -23,7 +23,11 @@ const ProjectCredits = sequelize.define('ProjectCredits', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  deposit_bank_purpose: {
+  purpose: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  deposit_bank: {
     type: DataTypes.STRING,
     allowNull: false
   },

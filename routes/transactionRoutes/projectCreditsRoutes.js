@@ -15,8 +15,11 @@ router.get('/', verifyToken, projectCredits.getProjectCreditsDetails);
 // Get vendor master details
 router.get('/source',verifyToken,  projectCredits.getSourceDetails);
 
-// Get expense master details
+// Get purpose master details
 router.get('/purpose', verifyToken, projectCredits.getPurposeDetails);
+
+// Get deposite bank master details
+router.get('/depositeBank', verifyToken, projectCredits.getDepositeBankDetails);
 
 // Get payment mode master details
 router.get('/paymentMode', verifyToken, projectCredits.getPaymentModeDetails);

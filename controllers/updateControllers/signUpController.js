@@ -197,6 +197,50 @@ const userRegister = async (req, res) => {
   }
 };
 
+// 🔹 Get Logged-in User Profile
+const getUserProfile = async (req, res) => {
+  try {
+       const userId = req.userId;
+   
+    const user = await User.findOne({ where: { userId } });
+  
+
+   
+    res.status(200).json({ user });
+    console.log("user details ", user)
+
+  } catch (error) {
+    console.error("❌ Error fetching user profile:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+// Update
+const updateUserDetails = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+   
+    const { fullname, mobilenumber, email, password, profile } = req.body;
+
+    const userDetails = await user.findOne({ where: { id, userId } });
+    if (!userDetails) return res.status(404).json({ error: "User not found" });
+
+    userDetails.fullname = fullname
+    userDetails.mobilenumber = mobilenumber
+    userDetails.email = email
+    userDetails.password = password
+    userDetails.profile = profile
+    await userDetails.save();
+
+    res.json(userDetails);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 // 🔹 Login User
 const userLogin = async (req, res) => {
   try {
@@ -306,4 +350,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { sendOtp, verifyOtp, userRegister, userLogin, forgotPassword, resetPassword };
+module.exports = { sendOtp, verifyOtp, userRegister,getUserProfile, updateUserDetails,userLogin, forgotPassword, resetPassword };
