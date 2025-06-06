@@ -12,7 +12,7 @@ const EmployeeMaster = sequelize.define(
         employeeID: {
             type: DataTypes.STRING,
             allowNull :false,
-            unique: true
+            // unique: true
         },
         employeeName: {
             type: DataTypes.STRING,
@@ -21,7 +21,7 @@ const EmployeeMaster = sequelize.define(
         employeePhone: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true
+            // unique: true
         },
         employeeEmail: {
             type: DataTypes.STRING,

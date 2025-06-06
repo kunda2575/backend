@@ -55,8 +55,16 @@ const User = sequelize.define(
     },
   },
   {
+    defaultScope: {
+      attributes: { exclude: ['password'] }, // 👈 Exclude password by default
+    },
+    scopes: {
+      withPassword: {
+        attributes: {}, // 👈 Include all attributes
+      },
+    },
     tableName: "users",
-    timestamps: true, // ✅ Auto-generates createdAt & updatedAt
+    timestamps: true, // 👈 Enables Sequelize to manage createdAt and updatedAt
   }
 );
 

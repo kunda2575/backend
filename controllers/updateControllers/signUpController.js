@@ -10,24 +10,36 @@ const { sequelize } = require("../../config/db");
 dotenv.config();
 const secretKey = process.env.JWT_SECRET;
 
+
+const checkEmailExists = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ where: { email } });
+
+    if (user) {
+      return res.status(409).json({ exists: true, message: "Email already registered" });
+    }
+
+    return res.json({ exists: false });
+  } catch (err) {
+    console.error("Email check failed:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
 const sendOtp = async (req, res) => {
   const { email } = req.body;
 
   try {
-    // Check if the email is already registered
-    const userExists = await User.findOne({ where: { email } });
-
-    if (userExists) {
-      return res.status(400).json({ error: "Email already registered" });
-    }
-
+    
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiryTime = new Date(Date.now() + 6 * 60 * 1000); // 6 minutes expiry
 
     console.log("✅ Generated OTP:", otp);
 
-    // Save OTP to database
+    // Save OTP to database (upsert to update or insert)
     await OTP.upsert({ email, otp, expiry: expiryTime });
 
     // Configure email transporter
@@ -37,37 +49,26 @@ const sendOtp = async (req, res) => {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-      secure: true, // Use TLS
+      secure: true,
       tls: {
-        rejectUnauthorized: false, // For development only, not recommended in production
+        rejectUnauthorized: false, // Only for development
       },
-    });
-    
-
-    // Verify SMTP Connection
-    transporter.verify((error, success) => {
-      if (error) {
-        // console.error("🚨 SMTP Connection Error:", error);
-        return res.status(500).json({ error: "Email server error" });
-      } else {
-        // console.log("✅ SMTP Server is Ready to Send Emails");
-      }
     });
 
     // Send OTP via email
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Email Verification OTP",
-      text: `Your OTP is: ${otp}. It is valid for 5 minutes.`,
+      subject: "Your OTP for Verification",
+      text: `Your OTP is: ${otp}. It is valid for 6 minutes.`,
     };
 
     transporter.sendMail(mailOptions, (err, info) => {
       if (err) {
-        // console.error("🚨 Error sending OTP email:", err);
+        console.error("🚨 Error sending OTP email:", err);
         return res.status(500).json({ error: "Failed to send OTP email" });
       } else {
-        // console.log("✅ Email sent:", info.response);
+        console.log("✅ OTP email sent:", info.response);
         return res.status(200).json({ message: "OTP sent to email" });
       }
     });
@@ -158,7 +159,7 @@ const userRegister = async (req, res) => {
         rejectUnauthorized: false, // For development only, not recommended in production
       },
     });
-    
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
@@ -200,12 +201,12 @@ const userRegister = async (req, res) => {
 // 🔹 Get Logged-in User Profile
 const getUserProfile = async (req, res) => {
   try {
-       const userId = req.userId;
-   
-    const user = await User.findOne({ where: { userId } });
-  
+    const userId = req.userId;
 
-   
+    const user = await User.findOne({ where: { userId } });
+
+
+
     res.status(200).json({ user });
     console.log("user details ", user)
 
@@ -215,31 +216,25 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-
-// Update
 const updateUserDetails = async (req, res) => {
-  try {
-    const userId = req.userId;
-    const { id } = req.params;
-   
-    const { fullname, mobilenumber, email, password, profile } = req.body;
+  const { fullname, mobilenumber, email, profile, password } = req.body;
+  const userId = req.params.userId;
 
-    const userDetails = await user.findOne({ where: { id, userId } });
-    if (!userDetails) return res.status(404).json({ error: "User not found" });
+  if (!userId) return res.status(400).json({ message: "Missing userId" });
 
-    userDetails.fullname = fullname
-    userDetails.mobilenumber = mobilenumber
-    userDetails.email = email
-    userDetails.password = password
-    userDetails.profile = profile
-    await userDetails.save();
+  const user = await User.findByPk(userId);
+  if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.json(userDetails);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  let updatedData = { fullname, mobilenumber, email, profile };
+
+  if (password) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    updatedData.password = hashedPassword;
   }
-};
 
+  await user.update(updatedData);
+  res.json({ success: true, message: "User updated" });
+};
 
 // 🔹 Login User
 const userLogin = async (req, res) => {
@@ -252,8 +247,13 @@ const userLogin = async (req, res) => {
     if (!password) {
       return res.status(400).json({ error: "Password is required" });
     }
+    const user = await User.scope('withPassword').findOne({
+      where: {
+        [Op.or]: [{ email }, { mobilenumber }, { username }]
+      }
+    });
 
-    const user = await User.findOne({ where: { [Op.or]: [{ email }, { mobilenumber }, { username }] } });
+
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: "Invalid email/mobile or password" });
@@ -267,7 +267,6 @@ const userLogin = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
 // 🔹 Forgot Password (Send OTP)
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -298,7 +297,7 @@ const forgotPassword = async (req, res) => {
         rejectUnauthorized: false, // For development only, not recommended in production
       },
     });
-    
+
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
@@ -324,12 +323,12 @@ const resetPassword = async (req, res) => {
       where: { resetPasswordToken: otp, resetPasswordExpires: { [Op.gt]: new Date() } },
     });
 
-    if (!user || !user.resetPasswordExpires||user.resetPasswordExpires<new Date()) {
-      
-    await User.update(
-      { resetPasswordToken: null, resetPasswordExpires: null },
-      { where: { resetPasswordToken: otp } }
-    );
+    if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+
+      await User.update(
+        { resetPasswordToken: null, resetPasswordExpires: null },
+        { where: { resetPasswordToken: otp } }
+      );
       return res.status(400).json({ error: "Invalid or expired OTP" });
     }
 
@@ -337,9 +336,9 @@ const resetPassword = async (req, res) => {
 
 
 
-    user.password=hashedPassword;
-    user.resetPasswordToken=null;
-    user.resetPasswordExpires=null;
+    user.password = hashedPassword;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
     await user.save();
 
     res.status(200).json({ message: "Password reset successful" });
@@ -350,4 +349,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { sendOtp, verifyOtp, userRegister,getUserProfile, updateUserDetails,userLogin, forgotPassword, resetPassword };
+module.exports = {checkEmailExists, sendOtp, verifyOtp, userRegister, getUserProfile, updateUserDetails, userLogin, forgotPassword, resetPassword };

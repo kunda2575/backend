@@ -22,6 +22,9 @@ const verifyToken = async (req, res, next) => {
 
         // Attach userId to request object
         req.userId = decoded.userId;
+        
+
+
 
         // Proceed to the next middleware/route handler
         next();

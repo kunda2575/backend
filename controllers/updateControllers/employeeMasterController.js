@@ -1,19 +1,57 @@
 
 const EmployeeMaster =require('../../models/updateModels/employeeMasterSchema');
+const { Op } = require("sequelize");
 
-// create
-exports.createEmployeeDetails = async (req,res) =>{
-    try {
-        const userId = req.userId;
-        const{employeeID,employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department,emp_address}=req.body
-        const newEmployeeDetails =await EmployeeMaster.create({
-            employeeName,employeePhone,employeeEmail,address,idType,idProof1,employeeSalary,department,emp_address,userId,employeeID})
-        res.status(201).json(newEmployeeDetails)
+exports.createEmployeeDetails = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const {
+      employeeID,
+      employeeName,
+      employeePhone,
+      employeeEmail,
+      idType,
+      idProof1,
+      employeeSalary,
+      department,
+      emp_address
+    } = req.body;
 
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    // Check for duplicates (optional but recommended)
+    const existing = await EmployeeMaster.findOne({
+      where: {
+        [Op.or]: [
+          { employeeID },
+          { employeeEmail },
+          { employeePhone }
+        ],
+        userId
+      }
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: 'Duplicate Employee ID, Email, or Phone' });
     }
-}
+
+    const newEmployee = await EmployeeMaster.create({
+      employeeID,
+      employeeName,
+      employeePhone,
+      employeeEmail,
+      idType,
+      idProof1,
+      employeeSalary,
+      department,
+      emp_address,
+      userId
+    });
+
+    res.status(201).json(newEmployee);
+  } catch (err) {
+    console.error('Error creating employee:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
 
 // read
 exports.getEmployeeDetails = async(req,res)=>{
