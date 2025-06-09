@@ -4,14 +4,22 @@ const unitType = require("../../models/updateModels/unitTypeSchema");
 const vendor = require('../../models/updateModels/vendorMasterSchema');
 const materialMaster = require('../../models/updateModels/materialMasterSchema');
 
+const fs = require("fs");
+
 const multer = require("multer");
 const path = require("path");
 const { v4: uuidv4 } = require('uuid');
 
-// Multer Storage Configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/invoices");
+    const uploadPath = path.join(__dirname, "../../uploads");
+
+    // Check if directory exists, if not create it
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true }); // ✅ Create parent directories too
+    }
+
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -20,13 +28,9 @@ const storage = multer.diskStorage({
   },
 });
 
-exports.upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
-});
 
 // ✅ Create Inventory Entry
-exports.createInventoryEntry = async (req, res) => {
+const  createInventoryEntry = async (req, res) => {
   try {
     const {
       material_id,
@@ -68,7 +72,7 @@ console.log("Uploaded files:", req.files);
 };
 
 // ✅ Get Inventory Details (Filtered)
-exports.getInventaryDetails = async (req, res) => {
+const  getInventaryDetails = async (req, res) => {
   try {
     const userId = req.userId;
     const skip = parseInt(req.query.skip) || 0;
@@ -126,7 +130,7 @@ exports.getInventaryDetails = async (req, res) => {
 };
 
 // ✅ Get Inventory by ID
-exports.getInventoryById = async (req, res) => {
+const  getInventoryById = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
@@ -151,11 +155,12 @@ exports.getInventoryById = async (req, res) => {
   }
 };
 
-// ✅ Update Inventory
-exports.updateInventory = async (req, res) => {
+
+const  updateInventory = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
+
     const {
       material_id,
       material_name,
@@ -165,7 +170,6 @@ exports.updateInventory = async (req, res) => {
       invoice_cost_incl_gst,
       unit_type,
       quantity_received,
-      invoice_attachment,
       entered_by
     } = req.body;
 
@@ -175,6 +179,26 @@ exports.updateInventory = async (req, res) => {
       return res.status(404).json({ error: "Inventory not found or unauthorized access." });
     }
 
+    // ✅ Handle invoice file attachment
+    const files = req.files || [];
+    let invoiceAttachments;
+
+    if (files.length > 0) {
+      // Delete old attachments (optional cleanup)
+      const oldFiles = inventory.invoice_attachment ? inventory.invoice_attachment.split(',') : [];
+      oldFiles.forEach((file) => {
+        const filePath = path.join(__dirname, "../../uploads", file);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      });
+
+      // Save new uploaded files
+      invoiceAttachments = files.map(file => file.filename).join(",");
+    } else {
+      // If no new file, keep the old filenames
+      invoiceAttachments = inventory.invoice_attachment;
+    }
+
+    // ✅ Update the record
     await inventory.update({
       material_id,
       material_name,
@@ -184,19 +208,26 @@ exports.updateInventory = async (req, res) => {
       invoice_cost_incl_gst,
       unit_type,
       quantity_received,
-      invoice_attachment, // this should be a comma-separated string of filenames
+      invoice_attachment: invoiceAttachments,
       entered_by
     });
 
     return res.status(200).json({ message: "Material updated successfully.", inventory });
   } catch (err) {
-    console.error("Error updating material:", err);
+    console.error("Error updating inventory:", err);
+
+    if (err.name === "SequelizeUniqueConstraintError") {
+      return res.status(400).json({
+        error: `Invoice number '${req.body.invoice_number}' already exists.`
+      });
+    }
+
     return res.status(500).json({ error: err.message });
   }
 };
 
 // ✅ Delete Inventory
-exports.deleteInventory = async (req, res) => {
+const  deleteInventory = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
@@ -215,7 +246,7 @@ exports.deleteInventory = async (req, res) => {
 };
 
 // ✅ Get Material Master (User-Specific)
-exports.getMaterialMasterDetails = async (req, res) => {
+const  getMaterialMasterDetails = async (req, res) => {
   const userId = req.userId;
   if (!userId) {
     return res.status(400).json({ error: "User ID not found" });
@@ -230,7 +261,7 @@ exports.getMaterialMasterDetails = async (req, res) => {
 };
 
 // ✅ Get Unit Type (User-Specific)
-exports.getUnitTypeDetails = async (req, res) => {
+const  getUnitTypeDetails = async (req, res) => {
   const userId = req.userId;
   if (!userId) {
     return res.status(400).json({ error: "User ID not found" });
@@ -245,7 +276,7 @@ exports.getUnitTypeDetails = async (req, res) => {
 };
 
 // ✅ Get Vendor Details (User-Specific)
-exports.getVendorDetails = async (req, res) => {
+const  getVendorDetails = async (req, res) => {
   const userId = req.userId;
   if (!userId) {
     return res.status(400).json({ error: "User ID not found" });
@@ -257,4 +288,22 @@ exports.getVendorDetails = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+};
+// Add this at the bottom of inventoryEntry controller file
+
+const multerInstance = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
+
+module.exports = {
+  createInventoryEntry,
+  getInventaryDetails,
+  getMaterialMasterDetails,
+  getUnitTypeDetails,
+  getVendorDetails,
+  getInventoryById,
+  updateInventory,
+  deleteInventory,
+  upload: multerInstance // ✅ Export the correctly configured multer
 };

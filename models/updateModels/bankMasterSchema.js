@@ -16,7 +16,7 @@ const BankMaster = sequelize.define(
         ifscCode: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true
+            // unique: true
         },
         branch: {
             type: DataTypes.STRING,

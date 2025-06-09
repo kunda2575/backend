@@ -3,6 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { sqlDb } = require("./config/db");
 const path = require('path');
+const fs = require('fs');
 
 //  update masters
 const blocksRoutes = require('./routes/updateRoutes/blockRoutes');
@@ -156,6 +157,13 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     res.setHeader('Content-Disposition', 'inline'); // 👈 Important: show in browser
   }
 }));
+
+
+const uploadsDir = path.join(__dirname, 'uploads');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 
     // ✅ Start Server

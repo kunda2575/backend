@@ -4,13 +4,19 @@ const MaterialMaster = require('../../models/updateModels/materialMasterSchema')
 exports.createMaterialMaster = async (req, res) => {
   try {
     const userId = req.userId;
-    const { materialName,material_id } = req.body;
-    const newMaterialMaster = await MaterialMaster.create({ material_id, materialName,userId});
+    const { materialName, material_id } = req.body;
+
+    if (!materialName || !material_id) {
+      return res.status(400).json({ error: "Material name and ID are required." });
+    }
+
+    const newMaterialMaster = await MaterialMaster.create({ material_id, materialName, userId });
     res.status(201).json(newMaterialMaster);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message }); // keep this for unhandled server errors
   }
 };
+
 
 // Read all
 exports.getMaterialMasters = async (req, res) => {

@@ -2,24 +2,16 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../../middleware/verfiyToken');
 
-// Import controller functions
+// ✅ Import controller and multer from controller file
 const inventoryEntry = require('../../controllers/transactionControllers/inventoryEntry');
+const upload = inventoryEntry.upload; 
 
 // Create Inventory
 
 
-const multer = require("multer");
-const upload = multer({ dest: "uploads/" }); // or configure storage
 
 router.post('/',  upload.array("invoice_attachment", 1),verifyToken, inventoryEntry.createInventoryEntry);
 
-
-// router.post(
-//   '/',
-//   verifyToken,
-//   inventoryEntry.upload.array('invoice_attachment', 5),
-//   inventoryEntry.createInventoryEntry
-// );
 
 
 // Get Inventory Details with filtering and pagination
@@ -41,8 +33,8 @@ router.get('/:id', verifyToken, inventoryEntry.getInventoryById);
 // router.put('/:id', verifyToken, inventoryEntry.updateInventory);
 
 
-router.put('/:id', upload.array("invoice_attachment", 5), inventoryEntry.updateInventory);
-
+// ✅ Update Inventory (uses correct multer config)
+router.put('/:id', upload.array("invoice_attachment", 5), verifyToken, inventoryEntry.updateInventory);
 
 // ✅ Delete Inventory (by ID)
 router.delete('/:id', verifyToken, inventoryEntry.deleteInventory);

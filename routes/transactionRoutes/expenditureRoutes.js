@@ -37,9 +37,7 @@ router.get('/paymentBank', verifyToken, expenditure.getPaymentBankDetails);
 // Get expenditure details with filtering and pagination
 router.get('/:id', verifyToken, expenditure.getExpenditureById);
 
-
-// Update Expenditure (by ID)
-router.put('/:id', verifyToken, expenditure.updateExpenditure);
+router.put('/:id', verifyToken, expenditure.uploadFields, expenditure.updateExpenditure);
 
 // Delete Expenditure (by ID)
 router.delete('/:id', verifyToken, expenditure.deleteExpenditure);

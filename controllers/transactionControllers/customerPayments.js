@@ -5,6 +5,7 @@ const PaymentMode = require('../../models/updateModels/paymentModeMasterSchema')
 const paymentType = require('../../models/updateModels/paymentTypeMasterSchema')
 const verifiedBy = require('../../models/updateModels/employeeMasterSchema')
 const fundingBank  = require('../../models/updateModels/bankMasterSchema')
+const customer  = require('../../models/updateModels/customerMasterSchema')
 
 // ✅ Create customerPayments
 exports.createcustomerPayments = async (req, res) => {
@@ -303,6 +304,19 @@ exports.getPaymentModeDetails = async (req, res) => {
 
         const paymentModeDetails = await PaymentMode.findAll({ where: { userId } });
         res.json(paymentModeDetails);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// ✅ Get payment mode details (user-specific)
+exports.getCustomerDetails = async (req, res) => {
+    try {
+        const userId = req.userId;
+        if (!userId) return res.status(400).json({ error: "User ID not found" });
+
+        const customerDetails = await customer.findAll({ where: { userId } });
+        res.json(customerDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

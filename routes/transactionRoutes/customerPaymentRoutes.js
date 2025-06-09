@@ -28,9 +28,13 @@ router.get('/verifiedBy', verifyToken, customerPayment.getVerifiedByDetails);
 router.get('/fundingBank', verifyToken, customerPayment.getfundingBankDetails);
 
 
+router.get('/customer', verifyToken, customerPayment.getCustomerDetails);
+
+
 
 // Get customerPayment details with filtering and pagination
 router.get('/:id', verifyToken, customerPayment.getcustomerPaymentsById);
+
 
 
 // Update Expenditure (by ID)
