@@ -1,0 +1,10 @@
+{
+  
+  "ext": "js,json",
+  "ignore": [
+    "uploads/*",
+    "node_modules/*",
+    ".env",
+    "*.log"
+  ]
+}

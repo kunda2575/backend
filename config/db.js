@@ -30,7 +30,7 @@ dialectOptions:{
     pool: {
       max: 10,
       min: 0, // ✅ Set min to 0 to allow idle connections to close
-      acquire: 60000, // increased timeout
+      acquire: 100000, // increased timeout
       idle: 10000,
     },
   }
