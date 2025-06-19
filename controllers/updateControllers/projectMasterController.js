@@ -1,66 +1,160 @@
+const ProjectMaster = require('../../models/updateModels/projectMasterSchema');
+const fs = require("fs");
+const multer = require("multer");
+const path = require("path");
+const { v4: uuidv4 } = require('uuid');
 
-const ProjectMaster =require('../../models/updateModels/projectMasterSchema');
+// Multer storage config
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, "../../uploads");
 
-// create
-exports.createProjectDetails = async (req,res) =>{
-    try {
-            const userId = req.userId;
-        const{projectName,projectOwner,projectContact,projectAddress,projectBrouchers,projectStartDate,projectEndDate}=req.body
-        const newProjectDetails =await ProjectMaster.create({
-            userId,projectName,projectOwner,projectContact,projectAddress,projectBrouchers,projectStartDate,projectEndDate})
-        res.status(201).json(newProjectDetails)
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    // Create directory if not exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
     }
-}
 
-// read
-exports.getProjectDetails = async(req,res)=>{
- try {
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+  },
+});
+
+// Export multer upload middleware
+exports.upload = multer({ storage });
+
+// ✅ Create Project
+exports.createProjectDetails = async (req, res) => {
+  try {
     const userId = req.userId;
-    const projectDetails = await ProjectMaster.findAll({ where: { userId } })
-    res.status(201).json(projectDetails)
- } catch (err) {
+    const {
+      projectName,
+      projectOwner,
+      projectContact,
+      projectAddress,
+      projectStartDate,
+      projectEndDate
+    } = req.body;
+
+    const files = req.files || [];
+    const projectBrouchers = files.map(file => file.filename).join(',');
+
+    const newProjectDetails = await ProjectMaster.create({
+      userId,
+      projectName,
+      projectOwner,
+      projectContact,
+      projectAddress,
+      projectBrouchers,
+      projectStartDate,
+      projectEndDate
+    });
+
+    res.status(201).json(newProjectDetails);
+  } catch (err) {
     res.status(500).json({ error: err.message });
- }
-}
+  }
+};
 
-// update
-exports.updateProjectsDetails = async (req,res)=>{
-    try {
-            const userId = req.userId; 
-        const{id}=req.params;
-        const{projectName,projectOwner,projectContact,projectAddress,projectBrouchers,projectStartDate,projectEndDate}=req.body
-       const projectDetails =  await ProjectMaster.findOne({ where: {id, userId } })
-       if(!projectDetails)
-        return res.status(404).json({ error: "Projects not found" });
+// ✅ Read Project Details
+exports.getProjectDetails = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const projectDetails = await ProjectMaster.findAll({ where: { userId } });
 
-      
-       projectDetails.projectName=projectName;
-       projectDetails.projectOwner = projectOwner;
-       projectDetails.projectContact = projectContact;
-       projectDetails.projectAddress = projectAddress;
-       projectDetails.projectBrouchers= projectBrouchers;
-       projectDetails.projectStartDate = projectStartDate;
-       projectDetails.projectEndDate =projectEndDate ;
-        await projectDetails.save()
-        res.status(201).json(projectDetails)
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    const updatedProperties = projectDetails.map(property => ({
+      ...property.toJSON(),
+      projectBroucher: property.projectBrouchers
+        ? property.projectBrouchers.split(",").map(img => `http://localhost:2026/uploads/${img}`)
+        : []
+    }));
+
+    res.status(200).json(updatedProperties);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Update Project Details
+exports.updateProjectsDetails = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+    const {
+      projectName,
+      projectOwner,
+      projectContact,
+      projectAddress,
+      projectStartDate,
+      projectEndDate
+    } = req.body;
+
+    const projectDetails = await ProjectMaster.findOne({ where: { id, userId } });
+    if (!projectDetails) return res.status(404).json({ error: "Project not found" });
+
+    const files = req.files || [];
+    let projectBrouchers;
+
+    if (files.length > 0) {
+      // Delete old files
+      const oldFiles = projectDetails.projectBrouchers
+        ? projectDetails.projectBrouchers.split(',')
+        : [];
+
+      oldFiles.forEach(file => {
+        const filePath = path.join(__dirname, "../../uploads", file);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      });
+
+      // New uploaded files
+      projectBrouchers = files.map(file => file.filename).join(',');
+    } else {
+      // Keep old
+      projectBrouchers = projectDetails.projectBrouchers;
     }
-}
 
-//delete
+    // Update fields
+    projectDetails.projectName = projectName;
+    projectDetails.projectOwner = projectOwner;
+    projectDetails.projectContact = projectContact;
+    projectDetails.projectAddress = projectAddress;
+    projectDetails.projectBrouchers = projectBrouchers;
+    projectDetails.projectStartDate = projectStartDate;
+    projectDetails.projectEndDate = projectEndDate;
 
-exports.deleteProjectsDetails = async(req,res)=>{
-    try {
-        const userId = req.userId;
-        const {id}=req.params;
-        const deleted = await ProjectMaster.destroy({where:{id,userId}})
-        if (!deleted) return res.status(404).json({ error: "Project Details not found" });
-        res.json({ message: "Project Details deleted successfully" });
-      } catch (err) {
-        res.status(500).json({ error: err.message });
-      }
+    await projectDetails.save();
+    res.status(200).json(projectDetails);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Delete Project Details
+exports.deleteProjectsDetails = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+
+    // Find the project before deleting
+    const project = await ProjectMaster.findOne({ where: { id, userId } });
+    if (!project) return res.status(404).json({ error: "Project not found" });
+
+    // Delete associated files
+    const oldFiles = project.projectBrouchers
+      ? project.projectBrouchers.split(',')
+      : [];
+
+    oldFiles.forEach(file => {
+      const filePath = path.join(__dirname, "../../uploads", file);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    });
+
+    await ProjectMaster.destroy({ where: { id, userId } });
+    res.json({ message: "Project deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

@@ -9,3 +9,4 @@ router.put('/:id', verifyToken,bankMasterController.updateBankDetails);
 router.delete('/:id',verifyToken, bankMasterController.deleteBankDetails);
 
 module.exports = router;
+

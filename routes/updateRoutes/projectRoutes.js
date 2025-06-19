@@ -1,12 +1,32 @@
-const express = require("express")
+const express = require("express");
 const router = express.Router();
 
-const projectRoutes = require('../../controllers/updateControllers/projectMasterController');
+const projectController = require('../../controllers/updateControllers/projectMasterController');
 const verifyToken = require("../../middleware/verfiyToken");
 
-router.post("/",verifyToken,projectRoutes.createProjectDetails)
-router.get("/",verifyToken,projectRoutes.getProjectDetails)
-router.put("/:id",verifyToken,projectRoutes.updateProjectsDetails)
-router.delete("/:id",verifyToken,projectRoutes.deleteProjectsDetails)
+// File Upload Middleware (Multer)
+const upload = projectController.upload;
 
-module.exports=router
+// ✅ Create project with file upload
+router.post(
+  "/",
+  verifyToken,
+  upload.array("projectBrouchers"), // Field name should match form
+  projectController.createProjectDetails
+);
+
+// ✅ Get all projects
+router.get("/", verifyToken, projectController.getProjectDetails);
+
+// ✅ Update project with file upload
+router.put(
+  "/:id",
+  verifyToken,
+  upload.array("projectBrouchers"), // Allow file updates
+  projectController.updateProjectsDetails
+);
+
+// ✅ Delete project
+router.delete("/:id", verifyToken, projectController.deleteProjectsDetails);
+
+module.exports = router;

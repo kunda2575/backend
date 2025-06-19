@@ -6,7 +6,7 @@ const verifyToken = require('../../middleware/verfiyToken');
 const customerPayment = require('../../controllers/transactionControllers/customerPayments');
 
 // Create customerPayment
-router.post('/', verifyToken, customerPayment.createcustomerPayments);
+router.post('/', verifyToken,customerPayment.uploadFields, customerPayment.createcustomerPayments);
 
 // Get customerPayment master details
 router.get('/', verifyToken, customerPayment.getcustomerPaymentsDetails);
@@ -38,7 +38,7 @@ router.get('/:id', verifyToken, customerPayment.getcustomerPaymentsById);
 
 
 // Update Expenditure (by ID)
-router.put('/:id', verifyToken, customerPayment.updatecustomerPayments);
+router.put('/:id', verifyToken, customerPayment.uploadFields,customerPayment.updatecustomerPayments);
 
 // Delete Expenditure (by ID)
 router.delete('/:id', verifyToken, customerPayment.deletecustomerPayments);

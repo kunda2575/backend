@@ -27,6 +27,7 @@ const teamMemberRoutes = require('./routes/updateRoutes/teamMemberRoutes');
 const unitTypeRoutes = require('./routes/updateRoutes/unitTypeRoutes');
 const vendorRoutes = require('./routes/updateRoutes/vendorRoutes');
 const userMasterRoutes = require('./routes/updateRoutes/userRoutes')
+const documentsRoutes = require('./routes/updateRoutes/documentsRoutes')
  
 
 
@@ -61,6 +62,7 @@ const { lostReasons } = require('./models/updateModels/lostReasonsSchema');
 const { bankMaster } = require('./models/updateModels/bankMasterSchema');
 const { fundSource } = require('./models/updateModels/fundSourceSchema');
 const { fundPurpose } = require('./models/updateModels/fundPurposeSchema');
+const { documentsMaster } = require('./models/updateModels/documentsUploadSchema');
 
 
 // tranaction models 
@@ -119,6 +121,7 @@ sqlDb()
     app.use('/api/unitTypes',unitTypeRoutes);
     app.use('/api/userMaster',userMasterRoutes);
     app.use('/api/vendors',vendorRoutes);
+    app.use('/api/documents',documentsRoutes);
 
     //transaction
     app.use('/api/leads',leadTransaction)
