@@ -3,9 +3,9 @@ const BlocksMaster = require('../../models/updateModels/blocksMasterSchema');
 // Create
 exports.createBlock = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const userId = req.userId;
     const { blockNoOrName } = req.body;
-    const newBlock = await BlocksMaster.create({ blockNoOrName,  userId });
+    const newBlock = await BlocksMaster.create({ blockNoOrName });
     res.status(201).json(newBlock);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -15,8 +15,8 @@ exports.createBlock = async (req, res) => {
 // Read all
 exports.getBlocks = async (req, res) => {
   try {
-    const userId = req.userId;
-    const blocks = await BlocksMaster.findAll({ where: { userId } });
+    // const userId = req.userId;
+    const blocks = await BlocksMaster.findAll();
     res.json(blocks);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -26,10 +26,10 @@ exports.getBlocks = async (req, res) => {
 // Update
 exports.updateBlock = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const userId = req.userId;
     const { id } = req.params;
     const { blockNoOrName } = req.body;
-    const block = await BlocksMaster.findOne({ where: {id, userId } });
+    const block = await BlocksMaster.findOne({ where: {id} });
     if (!block) return res.status(404).json({ error: "Block not found" });
 
     block.blockNoOrName = blockNoOrName;
@@ -45,9 +45,9 @@ exports.updateBlock = async (req, res) => {
 // Delete
 exports.deleteBlock = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const userId = req.userId;
     const { id } = req.params;
-    const deleted = await BlocksMaster.destroy({ where: { id, userId } });
+    const deleted = await BlocksMaster.destroy({ where: { id} });
     if (!deleted) return res.status(404).json({ error: "Block not found" });
     res.json({ message: "Block deleted successfully" });
   } catch (err) {

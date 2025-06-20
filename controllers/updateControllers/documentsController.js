@@ -37,7 +37,7 @@ exports.createDocumentsDetails = async (req, res) => {
 
     const newDocuments = await DocumentsMaster.create({
       documentsUpload,
-      userId
+    
     });
 
     res.status(201).json(newDocuments);
@@ -51,7 +51,7 @@ exports.createDocumentsDetails = async (req, res) => {
 exports.getDocumentsDetails = async (req, res) => {
   try {
     const userId = req.userId;
-    const documentsDetails = await DocumentsMaster.findAll({ where: { userId } });
+    const documentsDetails = await DocumentsMaster.findAll();
 
     const updatedDetails = documentsDetails.map(doc => ({
       ...doc.toJSON(),
@@ -72,7 +72,7 @@ exports.updateDocumentsDetails = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    const documents = await DocumentsMaster.findOne({ where: { id, userId } });
+    const documents = await DocumentsMaster.findOne({ where: { id } });
     if (!documents) {
       return res.status(404).json({ error: "Documents not found" });
     }
@@ -105,7 +105,7 @@ exports.deleteDocumentsDetails = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    const documents = await DocumentsMaster.findOne({ where: { id, userId } });
+    const documents = await DocumentsMaster.findOne({ where: { id } });
     if (!documents) return res.status(404).json({ error: "Documents not found" });
 
     const oldFiles = documents.documentsUpload ? documents.documentsUpload.split(',') : [];

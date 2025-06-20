@@ -13,10 +13,10 @@ const builderMaster = sequelize.define(
             type:DataTypes.STRING,
             allowNull:false
         },
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+        // userId:{
+        //     type:DataTypes.INTEGER,
+        //     allowNull:false
+        // }
     },
     {
         tableName:'builder_masters',

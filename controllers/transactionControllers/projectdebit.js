@@ -27,13 +27,12 @@ exports.createProjectDebit = async (req, res) => {
             date,
             payed_to,
             vendor_name,
-           
             amount_inr,
             invoice_number,
             payment_mode,
             payment_bank,
           
-            userId
+        
         });
 
         return res.status(201).json(newProjectDebit);
@@ -45,11 +44,11 @@ exports.createProjectDebit = async (req, res) => {
 exports.getProjectDebitDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        console.log("Decoded JWT payload:", req.userId);  // Ensure userId is present
+        // console.log("Decoded JWT payload:", req.userId);  // Ensure userId is present
 
-        if (!userId) {
-            return res.status(400).json({ error: "User ID is required." });
-        }
+        // if (!userId) {
+        //     return res.status(400).json({ error: "User ID is required." });
+        // }
 
         const skip = parseInt(req.query.skip) || 0;
         const limit = parseInt(req.query.limit) || 10;
@@ -82,16 +81,13 @@ exports.getProjectDebitDetails = async (req, res) => {
 
         console.log("Filters applied:", filters);
 
-        let whereClause = { userId };
-        if (filters.length > 0) {
-            whereClause = {
-                [Op.and]: [
-                    { userId },
-                    { [Op.or]: filters }
-                ]
-            };
-        }
-
+       
+    let whereClause = {};
+    if (filters.length > 0) {
+      whereClause = {
+        [Op.and]: [{ [Op.or]: filters }]
+      };
+    }
         console.log("Final where clause:", whereClause);
 
         const projectDebitDetails = await ProjectDebit.findAll({
@@ -126,7 +122,7 @@ exports.getProjectDebitById = async (req, res) => {
     const { id } = req.params;
 
 
-    const projectDebit = await ProjectDebit.findOne({ where:{id,userId}});
+    const projectDebit = await ProjectDebit.findOne({ where:{id}});
 
     if (!projectDebit) {
       return res.status(404).json({ error: "ProjectDebit not found" });
@@ -166,7 +162,7 @@ exports.updateProjectDebit = async (req, res) => {
             payment_bank,
     } = req.body;
 
-    const projectDebitToUpdate = await ProjectDebit.findOne({ where: { id, userId } });
+    const projectDebitToUpdate = await ProjectDebit.findOne({ where: { id } });
 
     if (!projectDebitToUpdate) {
       return res.status(404).json({ error: "ProjectDebit not found or unauthorized access." });
@@ -198,7 +194,7 @@ exports.deleteProjectDebit = async (req, res) => {
         const userId = req.userId;
         const { id } = req.params;
 
-        const deleted = await ProjectDebit.destroy({ where: { id, userId } });
+        const deleted = await ProjectDebit.destroy({ where: { id } });
 
         if (!deleted) {
             return res.status(404).json({ error: "ProjectDebit not found or unauthorized access." });
@@ -217,7 +213,7 @@ exports.getPayTo = async (req, res) => {
         const userId = req.userId;
         if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-        const payedDetails = await PayedTo.findAll({ where: { userId } });
+        const payedDetails = await PayedTo.findAll();
         res.json(payedDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -228,7 +224,7 @@ exports.getVendorDetails = async (req, res) => {
         const userId = req.userId;
         if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-        const vendorDetails = await Vendor.findAll({ where: { userId } });
+        const vendorDetails = await Vendor.findAll();
         res.json(vendorDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -241,7 +237,7 @@ exports.getPayedToDetails = async (req, res) => {
         const userId = req.userId;
         if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-        const expenseDetails = await PayedTo.findAll({ where: { userId } });
+        const expenseDetails = await PayedTo.findAll();
         res.json(expenseDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -254,7 +250,7 @@ exports.getPaymentModeDetails = async (req, res) => {
         const userId = req.userId;
         if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-        const paymentModeDetails = await PaymentMode.findAll({ where: { userId } });
+        const paymentModeDetails = await PaymentMode.findAll();
         res.json(paymentModeDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -267,7 +263,7 @@ exports.getPaymentBankDetails = async (req, res) => {
         const userId = req.userId;
         if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-        const paymentBankDetails = await PaymentBank.findAll({ where: { userId } });
+        const paymentBankDetails = await PaymentBank.findAll();
         res.json(paymentBankDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });

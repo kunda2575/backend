@@ -5,7 +5,7 @@ exports.createPaymentMode = async (req, res) => {
   try {
     const userId = req.userId;
     const { paymentMode } = req.body;
-    const newPaymentMode = await PaymentMode.create({ paymentMode,userId});
+    const newPaymentMode = await PaymentMode.create({ paymentMode});
     res.status(201).json(newPaymentMode);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -16,7 +16,7 @@ exports.createPaymentMode = async (req, res) => {
 exports.getPaymentModes = async (req, res) => {
   try {
     const userId = req.userId;
-    const paymentMode = await PaymentMode.findAll({ where: { userId } });
+    const paymentMode = await PaymentMode.findAll();
     res.json(paymentMode);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -29,7 +29,7 @@ exports.updatePaymentMode = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
     const { paymentMode } = req.body;
-    const paymentModes = await PaymentMode.findOne({ where: {id, userId } });
+    const paymentModes = await PaymentMode.findOne({ where: {id} });
     if (!paymentModes) return res.status(404).json({ error: "Payment Mode not found" });
 
    
@@ -47,7 +47,7 @@ exports.deletePaymentMode = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const deleted = await PaymentMode.destroy({ where: { id,userId } });
+    const deleted = await PaymentMode.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ error: "payment Mode not found" });
     res.json({ message: "payment Mode deleted successfully" });
   } catch (err) {

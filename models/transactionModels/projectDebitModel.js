@@ -35,10 +35,7 @@ const ProjectDebit = sequelize.define('ProjectDebit', {
         type: DataTypes.STRING,
         allowNull: false
     },
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    }
+   
 }, {
     tableName: 'project_debits',
     timestamps: true

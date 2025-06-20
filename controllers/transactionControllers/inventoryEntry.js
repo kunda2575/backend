@@ -61,7 +61,7 @@ console.log("Uploaded files:", req.files);
       quantity_received,
       invoice_attachment: invoiceAttachments.join(','), // Save as comma-separated string
       entered_by,
-      userId,
+    
     });
 
     res.status(201).json({ success: true, data: newEntry });
@@ -97,16 +97,14 @@ const  getInventaryDetails = async (req, res) => {
       conditions.push({ vendor_name: req.query.vendorName });
     }
 
-    let whereClause = { userId: userId };
-
+   
+    let whereClause = {};
     if (conditions.length > 0) {
       whereClause = {
-        [Op.and]: [
-          { userId: userId },
-          { [Op.or]: conditions }
-        ]
+        [Op.and]: [{ [Op.or]: conditions }]
       };
     }
+
 
     const inventoryDetails = await inventoryEntry.findAll({
       where: whereClause,
@@ -135,7 +133,7 @@ const  getInventoryById = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    const inventory = await inventoryEntry.findOne({ where: { id, userId } });
+    const inventory = await inventoryEntry.findOne({ where: { id } });
 
     if (!inventory) {
       return res.status(404).json({ error: "Material not found or unauthorized access." });
@@ -173,7 +171,7 @@ const  updateInventory = async (req, res) => {
       entered_by
     } = req.body;
 
-    const inventory = await inventoryEntry.findOne({ where: { id, userId } });
+    const inventory = await inventoryEntry.findOne({ where: { id } });
 
     if (!inventory) {
       return res.status(404).json({ error: "Inventory not found or unauthorized access." });
@@ -232,7 +230,7 @@ const  deleteInventory = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    const deleted = await inventoryEntry.destroy({ where: { id, userId } });
+    const deleted = await inventoryEntry.destroy({ where: { id } });
 
     if (!deleted) {
       return res.status(404).json({ error: "Inventory not found or unauthorized access." });
@@ -248,12 +246,12 @@ const  deleteInventory = async (req, res) => {
 // ✅ Get Material Master (User-Specific)
 const  getMaterialMasterDetails = async (req, res) => {
   const userId = req.userId;
-  if (!userId) {
-    return res.status(400).json({ error: "User ID not found" });
-  }
+  // if (!userId) {
+  //   return res.status(400).json({ error: "User ID not found" });
+  // }
 
   try {
-    const materialDetails = await materialMaster.findAll({ where: { userId } });
+    const materialDetails = await materialMaster.findAll();
     res.json(materialDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -263,12 +261,12 @@ const  getMaterialMasterDetails = async (req, res) => {
 // ✅ Get Unit Type (User-Specific)
 const  getUnitTypeDetails = async (req, res) => {
   const userId = req.userId;
-  if (!userId) {
-    return res.status(400).json({ error: "User ID not found" });
-  }
+  // if (!userId) {
+  //   return res.status(400).json({ error: "User ID not found" });
+  // }
 
   try {
-    const unitTypeDetails = await unitType.findAll({ where: { userId } });
+    const unitTypeDetails = await unitType.findAll();
     res.json(unitTypeDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -278,12 +276,12 @@ const  getUnitTypeDetails = async (req, res) => {
 // ✅ Get Vendor Details (User-Specific)
 const  getVendorDetails = async (req, res) => {
   const userId = req.userId;
-  if (!userId) {
-    return res.status(400).json({ error: "User ID not found" });
-  }
+  // if (!userId) {
+  //   return res.status(400).json({ error: "User ID not found" });
+  // }
 
   try {
-    const vendorDetails = await vendor.findAll({ where: { userId } });
+    const vendorDetails = await vendor.findAll();
     res.json(vendorDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });

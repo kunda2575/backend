@@ -14,10 +14,10 @@ const blocksMaster = sequelize.define(
             allowNull: false
         },
        
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:true
-        }
+        // userId:{
+        //     type:DataTypes.INTEGER,
+        //     allowNull:true
+        // }
     },
     {
         tableName: 'blocks_masters',

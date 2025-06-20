@@ -13,10 +13,7 @@ const leadSource = sequelize.define(
             type:DataTypes.STRING,
             allowNUll:false
         },
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+       
        
     },
     {

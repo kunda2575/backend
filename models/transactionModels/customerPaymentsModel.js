@@ -88,10 +88,7 @@ const CustomerPayments = sequelize.define('CustomerPayments', {
         type: DataTypes.STRING,
         allowNull: true
     },
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false  // Assuming userId should be mandatory for every customer_payments record
-    }
+   
 }, {
     tableName: 'customer_payments',
     timestamps: true  // Correct option name

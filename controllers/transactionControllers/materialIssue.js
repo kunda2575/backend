@@ -7,9 +7,9 @@ const unitType = require("../../models/updateModels/unitTypeSchema");
 exports.createMaterialIssue = async (req, res) => {
   try {
     const userId = req.userId;
-    if (!userId) {
-      return res.status(400).json({ error: "User ID is required." });
-    }
+    // if (!userId) {
+    //   return res.status(400).json({ error: "User ID is required." });
+    // }
 
     const {
       material_name,
@@ -27,7 +27,7 @@ exports.createMaterialIssue = async (req, res) => {
       issued_by,
       issued_to,
       issue_date,
-      userId
+    
     });
 
     return res.status(201).json(newMaterialIssue);
@@ -39,12 +39,12 @@ exports.createMaterialIssue = async (req, res) => {
 
 exports.getMaterialIssuesDetails = async (req, res) => {
     try {
-        const userId = req.userId;
-        console.log("Decoded JWT payload:", req.userId);  // Ensure userId is present
+        // const userId = req.userId;
+        // console.log("Decoded JWT payload:", req.userId);  // Ensure userId is present
 
-        if (!userId) {
-            return res.status(400).json({ error: "User ID is required." });
-        }
+        // if (!userId) {
+        //     return res.status(400).json({ error: "User ID is required." });
+        // }
 
         const skip = parseInt(req.query.skip) || 0;
         const limit = parseInt(req.query.limit) || 10;
@@ -65,15 +65,13 @@ exports.getMaterialIssuesDetails = async (req, res) => {
        
         console.log("Filters applied:", filters);
 
-        let whereClause = { userId };
-        if (filters.length > 0) {
-            whereClause = {
-                [Op.and]: [
-                    { userId },
-                    { [Op.or]: filters }
-                ]
-            };
-        }
+      
+    let whereClause = {};
+    if (filters.length > 0) {
+      whereClause = {
+        [Op.and]: [{ [Op.or]: filters }]
+      };
+    }
 
         console.log("Final where clause:", whereClause);
 
@@ -108,7 +106,7 @@ exports.getMaterialIssueById = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    const material = await MaterialIssue.findOne({ where: { id, userId } });
+    const material = await MaterialIssue.findOne({ where: { id } });
 
     if (!material) {
       return res.status(404).json({ error: "MaterialIssue not found or unauthorized access." });
@@ -135,7 +133,7 @@ exports.updateMaterialIssue = async (req, res) => {
       issue_date
     } = req.body;
 
-    const material = await MaterialIssue.findOne({ where: { id, userId } });
+    const material = await MaterialIssue.findOne({ where: { id } });
 
     if (!material) {
       return res.status(404).json({ error: "MaterialIssue not found or unauthorized access." });
@@ -163,7 +161,7 @@ exports.deleteMaterialIssue = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    const deleted = await MaterialIssue.destroy({ where: { id, userId } });
+    const deleted = await MaterialIssue.destroy({ where: { id } });
 
     if (!deleted) {
       return res.status(404).json({ error: "MaterialIssue not found or unauthorized access." });
@@ -179,12 +177,10 @@ exports.deleteMaterialIssue = async (req, res) => {
 // ✅ Get Material Master Details (user-specific)
 exports.getMaterialMasterDetails = async (req, res) => {
   const userId = req.userId;
-  if (!userId) {
-    return res.status(400).json({ error: "User ID not found" });
-  }
+ 
 
   try {
-    const materialDetails = await materialMaster.findAll({ where: { userId } });
+    const materialDetails = await materialMaster.findAll();
     res.json(materialDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -194,12 +190,12 @@ exports.getMaterialMasterDetails = async (req, res) => {
 // ✅ Get Unit Type Details (user-specific)
 exports.getUnitTypeDetails = async (req, res) => {
   const userId = req.userId;
-  if (!userId) {
-    return res.status(400).json({ error: "User ID not found" });
-  }
+  // if (!userId) {
+  //   return res.status(400).json({ error: "User ID not found" });
+  // }
 
   try {
-    const unitTypeDetails = await unitType.findAll({ where: { userId } });
+    const unitTypeDetails = await unitType.findAll();
     res.json(unitTypeDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });

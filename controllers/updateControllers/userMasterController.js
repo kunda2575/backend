@@ -5,7 +5,7 @@ exports.createUser = async (req, res) => {
   try {
     const userId = req.userId;
     const { userName, password, role, phone, email } = req.body;
-    const newUser = await UserMaster.create({ userName, password, role, phone, email,userId});
+    const newUser = await UserMaster.create({ userName, password, role, phone, email});
     res.status(201).json(newUser);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -16,7 +16,7 @@ exports.createUser = async (req, res) => {
 exports.getUsers = async (req, res) => {
   try {
     const userId = req.userId;
-    const User = await UserMaster.findAll({ where: { userId } });
+    const User = await UserMaster.findAll();
     res.json(User);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -29,7 +29,7 @@ exports.updateUser = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
     const { userName, password, role, phone, email } = req.body;
-    const Users = await UserMaster.findOne({ where: {id, userId } });
+    const Users = await UserMaster.findOne({ where: {id } });
     if (!Users) return res.status(404).json({ error: "User not found" });
 
    
@@ -52,7 +52,7 @@ exports.deleteUser = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const deleted = await UserMaster.destroy({ where: { id,userId } });
+    const deleted = await UserMaster.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ error: "User not found" });
     res.json({ message: "User deleted successfully" });
   } catch (err) {

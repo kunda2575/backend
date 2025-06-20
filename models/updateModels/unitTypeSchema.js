@@ -15,10 +15,7 @@ const unitType = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false
         },
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+       
     },
     {
         tableName: 'unit_type_masters',

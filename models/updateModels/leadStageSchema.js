@@ -13,10 +13,7 @@ const LeadStage = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false
         },
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+       
     },
     {
         tableName: 'lead_stages',  // ✅ Explicitly set the table name

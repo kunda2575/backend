@@ -5,7 +5,7 @@ exports.createFundPurpose = async (req, res) => {
   try {
     const userId = req.userId;
     const { fundPurpose } = req.body;
-    const newFundPurpose = await FundPurpose.create({ fundPurpose,userId});
+    const newFundPurpose = await FundPurpose.create({ fundPurpose});
     res.status(201).json(newFundPurpose);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -16,7 +16,7 @@ exports.createFundPurpose = async (req, res) => {
 exports.getFundPurposes = async (req, res) => {
   try {
     const userId = req.userId;
-    const fundPurpose = await FundPurpose.findAll({ where: { userId } });
+    const fundPurpose = await FundPurpose.findAll();
     res.json(fundPurpose);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -29,7 +29,7 @@ exports.updateFundPurpose = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
     const { fundPurpose } = req.body;
-    const fundPurposes = await FundPurpose.findOne({ where: {id, userId } });
+    const fundPurposes = await FundPurpose.findOne({ where: {id } });
     if (!fundPurposes) return res.status(404).json({ error: "FundPurpose not found" });
 
    
@@ -47,7 +47,7 @@ exports.deleteFundPurpose = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const deleted = await FundPurpose.destroy({ where: { id,userId } });
+    const deleted = await FundPurpose.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ error: "Fund Purpose not found" });
     res.json({ message: "Fund Purpose deleted successfully" });
   } catch (err) {

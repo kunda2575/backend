@@ -14,10 +14,7 @@ const documentsMaster = sequelize.define(
             allowNull: false
         },
        
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+       
     },
     {
         tableName: 'documents_master',

@@ -6,7 +6,7 @@ exports.createBankDetails = async (req, res) => {
     const userId = req.userId;
     const { bankName, ifscCode, branch } = req.body;
   
-    const newBankDetails = await BankMaster.create({ bankName, ifscCode, branch, userId });
+    const newBankDetails = await BankMaster.create({ bankName, ifscCode, branch });
     res.status(201).json(newBankDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -16,8 +16,8 @@ exports.createBankDetails = async (req, res) => {
 // Read all
 exports.getBankDetails = async (req, res) => {
   try {
-    const userId = req.userId;
-    const bankDetails = await BankMaster.findAll({ where: { userId } });
+    // const userId = req.userId;
+    const bankDetails = await BankMaster.findAll();
     res.json(bankDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -27,10 +27,10 @@ exports.getBankDetails = async (req, res) => {
 // Update
 exports.updateBankDetails = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const userId = req.userId;
     const { id } = req.params;
     const { bankName, ifscCode, branch } = req.body;
-    const bankDetails = await BankMaster.findOne({ where: { id, userId } });
+    const bankDetails = await BankMaster.findOne({ where: { id } });
     if (!bankDetails) return res.status(404).json({ error: "Bank not found" });
 
     bankDetails.bankName = bankName
@@ -47,9 +47,9 @@ exports.updateBankDetails = async (req, res) => {
 // Delete
 exports.deleteBankDetails = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const userId = req.userId;
     const { id } = req.params;
-    const deleted = await BankMaster.destroy({ where: { id, userId } });
+    const deleted = await BankMaster.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ error: "Bank Details not found" });
     res.json({ message: "Bank Details deleted successfully" });
   } catch (err) {

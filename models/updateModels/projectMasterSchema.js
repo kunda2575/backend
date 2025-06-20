@@ -38,10 +38,7 @@ const ProjectMaster = sequelize.define(
             type: DataTypes.DATE,  
             allowNull: false
         },
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+       
     },
     {
         tableName: 'project_masters',

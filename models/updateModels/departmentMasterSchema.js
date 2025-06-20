@@ -20,10 +20,7 @@ const DepartmentMaster = sequelize.define(
             unique: true
         },
        
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+      
     },
     {
         tableName: 'department_master',

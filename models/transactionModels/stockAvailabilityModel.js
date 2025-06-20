@@ -26,10 +26,7 @@ const Material = sequelize.define(
             type: DataTypes.STRING,
             defaultValue: 0,  // Default value is 0
         },
-        userId: {
-            type: DataTypes.INTEGER,
-            allowNull: true
-        }
+       
     },
     {
         tableName: 'materials',  // Specify the table name

@@ -42,10 +42,7 @@ const Expenditure = sequelize.define('Expenditure', {
         type: DataTypes.STRING,
         allowNull: true
     },
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false  // Assuming userId should be mandatory for every expenditure record
-    }
+   
 }, {
     tableName: 'expenditure',
     timestamps: true  // Correct option name

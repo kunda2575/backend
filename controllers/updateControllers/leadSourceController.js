@@ -5,7 +5,7 @@ exports.createLeadSource = async (req, res) => {
   try {
     const userId = req.userId;
     const { leadSource } = req.body;
-    const newLeadSource = await LeadSource.create({ leadSource,userId});
+    const newLeadSource = await LeadSource.create({ leadSource});
     res.status(201).json(newLeadSource);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -16,7 +16,7 @@ exports.createLeadSource = async (req, res) => {
 exports.getLeadSources = async (req, res) => {
   try {
     const userId = req.userId;
-    const leadSource = await LeadSource.findAll({ where: { userId } });
+    const leadSource = await LeadSource.findAll();
     res.json(leadSource);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -29,7 +29,7 @@ exports.updateLeadSource = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
     const { leadSource } = req.body;
-    const leadSources = await LeadSource.findOne({ where: {id, userId } });
+    const leadSources = await LeadSource.findOne({ where: {id } });
     if (!leadSources) return res.status(404).json({ error: "LeadSource not found" });
 
    
@@ -47,7 +47,7 @@ exports.deleteLeadSource = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const deleted = await LeadSource.destroy({ where: { id,userId } });
+    const deleted = await LeadSource.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ error: "Lead Source not found" });
     res.json({ message: "Lead Source deleted successfully" });
   } catch (err) {

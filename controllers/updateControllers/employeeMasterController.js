@@ -47,7 +47,7 @@ exports.createEmployeeDetails = async (req, res) => {
           { employeeEmail },
           { employeePhone }
         ],
-        userId
+        
       }
     });
 
@@ -65,7 +65,7 @@ exports.createEmployeeDetails = async (req, res) => {
       employeeSalary,
       department,
       emp_address,
-      userId
+      
     });
 
     res.status(201).json(newEmployee);
@@ -79,7 +79,7 @@ exports.createEmployeeDetails = async (req, res) => {
 exports.getEmployeeDetails = async (req, res) => {
   try {
     const userId = req.userId;
-    const employeeDetails = await EmployeeMaster.findAll({ where: { userId } });
+    const employeeDetails = await EmployeeMaster.findAll();
 
     const updatedDetails = employeeDetails.map(emp => ({
       ...emp.toJSON(),
@@ -111,7 +111,7 @@ exports.updateEmployeesDetails = async (req, res) => {
       emp_address
     } = req.body;
 
-    const employee = await EmployeeMaster.findOne({ where: { id, userId } });
+    const employee = await EmployeeMaster.findOne({ where: { id } });
 
     if (!employee) {
       return res.status(404).json({ error: "Employee not found" });
@@ -156,7 +156,7 @@ exports.deleteEmployeesDetails = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    const employee = await EmployeeMaster.findOne({ where: { id, userId } });
+    const employee = await EmployeeMaster.findOne({ where: { id } });
     if (!employee) return res.status(404).json({ error: "Employee not found" });
 
     // Delete associated files
@@ -166,7 +166,7 @@ exports.deleteEmployeesDetails = async (req, res) => {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     });
 
-    await EmployeeMaster.destroy({ where: { id, userId } });
+    await EmployeeMaster.destroy({ where: { id} });
     res.json({ message: "Employee deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });

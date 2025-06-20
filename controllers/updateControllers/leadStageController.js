@@ -6,7 +6,7 @@ exports.createLeadStage = async (req, res) => {
   try {
     const userId = req.userId;
     const { leadStage } = req.body;
-    const newLeadStage = await LeadStage.create({ leadStage,userId});
+    const newLeadStage = await LeadStage.create({ leadStage});
     res.status(201).json(newLeadStage);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -17,7 +17,7 @@ exports.createLeadStage = async (req, res) => {
 exports.getLeadStages = async (req, res) => {
   try {
     const userId = req.userId;
-    const leadStage = await LeadStage.findAll({ where: { userId } });
+    const leadStage = await LeadStage.findAll();
     res.json(leadStage);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -30,7 +30,7 @@ exports.updateLeadStage = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
     const { leadStage } = req.body;
-    const leadStages = await LeadStage.findOne({ where: {id, userId } });
+    const leadStages = await LeadStage.findOne({ where: {id } });
     if (!leadStages) return res.status(404).json({ error: "LeadStage not found" });
 
    
@@ -48,7 +48,7 @@ exports.deleteLeadStage = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const deleted = await LeadStage.destroy({ where: { id,userId } });
+    const deleted = await LeadStage.destroy({ where: { id} });
     if (!deleted) return res.status(404).json({ error: "Lead Stage not found" });
     res.json({ message: "Lead Stage deleted successfully" });
   } catch (err) {

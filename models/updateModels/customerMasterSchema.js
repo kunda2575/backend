@@ -51,10 +51,8 @@ const CustomerMaster = sequelize.define(
         documents:{
             type:DataTypes.STRING,
             allowNull :false
-        }, userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+        },
+        
     },{
     tableName:'customer_masters',
     timestamps :true}

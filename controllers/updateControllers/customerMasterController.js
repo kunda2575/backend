@@ -66,7 +66,7 @@ if (!customerName || !customerPhone || !customerEmail) {
       projectNameBlock,
       flatNo,
       documents,
-      userId
+      
     });
 
     res.status(201).json(newCustomer);
@@ -79,7 +79,7 @@ if (!customerName || !customerPhone || !customerEmail) {
 exports.getCustomerDetails = async (req, res) => {
   try {
     const userId = req.userId;
-    const allCustomers = await CustomerMaster.findAll({ where: { userId } });
+    const allCustomers = await CustomerMaster.findAll();
 
     const updated = allCustomers.map(cus => ({
       ...cus.toJSON(),
@@ -97,7 +97,7 @@ exports.getCustomerDetails = async (req, res) => {
 // ✅ Update
 exports.updateCustomersDetails = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const userId = req.userId;
     const { customerId } = req.params;
     const {
       customerName,
@@ -110,7 +110,7 @@ exports.updateCustomersDetails = async (req, res) => {
       flatNo
     } = req.body;
 
-    const customer = await CustomerMaster.findOne({ where: { customerId, userId } });
+    const customer = await CustomerMaster.findOne({ where: { customerId } });
     if (!customer) return res.status(404).json({ error: "Customer not found" });
 
     // 🧾 Handle file update
@@ -151,7 +151,7 @@ exports.deleteCustomersDetails = async (req, res) => {
     const userId = req.userId;
     const { customerId } = req.params;
 
-    const customer = await CustomerMaster.findOne({ where: { customerId, userId } });
+    const customer = await CustomerMaster.findOne({ where: { customerId} });
     if (!customer) return res.status(404).json({ error: "Customer not found" });
 
     const oldDocs = customer.documents ? customer.documents.split(',') : [];

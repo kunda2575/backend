@@ -7,7 +7,7 @@ exports.createTeamMemberDetails = async (req,res) =>{
             const userId = req.userId;
         const{team_name,team_phone,team_email,team_address,team_designation}=req.body
         const newTeamMembersDetails =await TeamMembers.create({
-            userId,team_name,team_phone,team_email,team_address,team_designation})
+            team_name,team_phone,team_email,team_address,team_designation})
         res.status(201).json(newTeamMembersDetails)
 
     } catch (err) {
@@ -19,7 +19,7 @@ exports.createTeamMemberDetails = async (req,res) =>{
 exports.getTeamMemberDetails = async(req,res)=>{
  try {
     const userId = req.userId;
-    const teamMemberDetails = await TeamMembers.findAll({ where: { userId } })
+    const teamMemberDetails = await TeamMembers.findAll()
     res.status(201).json(teamMemberDetails)
  } catch (err) {
     res.status(500).json({ error: err.message });
@@ -32,7 +32,7 @@ exports.updateTeamMemberDetails = async (req,res)=>{
             const userId = req.userId; 
         const{id}=req.params;
         const{team_name,team_phone,team_email,team_address,team_designation}=req.body
-       const teamMemberDetails =  await TeamMembers.findOne({ where: {id, userId } })
+       const teamMemberDetails =  await TeamMembers.findOne({ where: {id } })
        if(!teamMemberDetails)
         return res.status(404).json({ error: "Team Members not found" });
 
@@ -54,7 +54,7 @@ exports.deleteTeamMemberDetails = async(req,res)=>{
     try {
         const userId = req.userId;
         const {id}=req.params;
-        const deleted = await TeamMembers.destroy({where:{id,userId}})
+        const deleted = await TeamMembers.destroy({where:{id}})
         if (!deleted) return res.status(404).json({ error: "Team Member Details not found" });
         res.json({ message: "Team Member Details deleted successfully" });
       } catch (err) {

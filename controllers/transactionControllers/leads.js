@@ -1,15 +1,13 @@
-
 const { Op } = require('sequelize');
 
-const Leads = require("../../models/transactionModels/leadsModel")
-const LeadSource = require("../../models/updateModels/leadSourceSchema")
-const LeadStage = require("../../models/updateModels/leadStageSchema")
-const TeamMember = require("../../models/updateModels/teamMembersSchema")
+const Leads = require("../../models/transactionModels/leadsModel");
+const LeadSource = require("../../models/updateModels/leadSourceSchema");
+const LeadStage = require("../../models/updateModels/leadStageSchema");
+const TeamMember = require("../../models/updateModels/teamMembersSchema");
 
-// Create
+// ✅ Create
 exports.createLeadsDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const {
       contact_name,
       contact_phone,
@@ -30,7 +28,6 @@ exports.createLeadsDetails = async (req, res) => {
     } = req.body;
 
     const newLeadDetails = await Leads.create({
-
       contact_name,
       contact_phone,
       contact_email,
@@ -47,7 +44,6 @@ exports.createLeadsDetails = async (req, res) => {
       next_interacted_date,
       remarks,
       reason_for_lost_customers,
-      userId
     });
     res.status(201).json(newLeadDetails);
   } catch (err) {
@@ -55,78 +51,27 @@ exports.createLeadsDetails = async (req, res) => {
   }
 };
 
-// Read all
-// exports.getLeadDetails = async (req, res) => {
 
-//   try {
-//     console.log("query = ", req.query);
-
-//     const userId = req.userId;
-
-//     const skip = parseInt(req.query.skip) || 0;
-//     const limit = parseInt(req.query.limit) || null;  // null means no limit
-//     const conditions = [];
-
-//     // Utility function to parse and handle empty or null arrays
-//     const parseArray = value => (value && value !== '[]') ? value.split(',').map(item => item.trim()) : [];
-
-//     // Add conditions if query parameters are provided and valid
-//     if (req.query.leadStage) conditions.push({ lead_stage: { [Op.in]: parseArray(req.query.leadStage) } });
-//     if (req.query.leadSource) conditions.push({ lead_source: { [Op.in]: parseArray(req.query.leadSource) } });
-//     if (req.query.teamMember) conditions.push({ team_member: { [Op.in]: parseArray(req.query.teamMember) } });
-
-//     // If no conditions, fetch all data (no filter)
-//     const whereClause = conditions.length > 0 ? { [Op.or]: conditions } : {};
-
-//     console.log("whereClause =", whereClause);  // Debugging
-
-//     // Fetch leads based on whereClause
-//     // Fetch paginated leads
-//     const leadDetails = await Leads.findAll({
-//       where: whereClause,
-//       offset: skip,
-//       limit: limit,
-//     });
-//     const leadDetailsCount = await Leads.count({ where: whereClause });
-
-//     // Return result or message if no data is found
-//     res.status(200).json({ "leadDetails": leadDetails, "leadCount": leadDetailsCount })
-//   } catch (err) {
-//     console.error("Error details:", err);  // Log the error
-//     res.status(500).json({ error: err.message });
-//   }
-
-// };
-
+// ✅ Read
 exports.getLeadDetails = async (req, res) => {
   try {
-    console.log("query = ", req.query);
-
-    const userId = req.userId;
     const skip = parseInt(req.query.skip) || 0;
     const limit = parseInt(req.query.limit) || null;
 
-    const parseArray = value => (value && value !== '[]') ? value.split(',').map(item => item.trim()) : [];
+    const parseArray = value =>
+      value && value !== '[]' ? value.split(',').map(item => item.trim()) : [];
 
     const conditions = [];
-
     if (req.query.leadStage) conditions.push({ lead_stage: { [Op.in]: parseArray(req.query.leadStage) } });
     if (req.query.leadSource) conditions.push({ lead_source: { [Op.in]: parseArray(req.query.leadSource) } });
     if (req.query.teamMember) conditions.push({ team_member: { [Op.in]: parseArray(req.query.teamMember) } });
 
-    // Combine userId with other conditions using Op.and
-    let whereClause = { userId: userId }; // base condition
-
+    let whereClause = {};
     if (conditions.length > 0) {
       whereClause = {
-        [Op.and]: [
-          { userId: userId },
-          { [Op.or]: conditions }
-        ]
+        [Op.and]: [{ [Op.or]: conditions }]
       };
     }
-
-    console.log("whereClause =", JSON.stringify(whereClause));
 
     const leadDetails = await Leads.findAll({
       where: whereClause,
@@ -134,29 +79,25 @@ exports.getLeadDetails = async (req, res) => {
       limit: limit,
     });
 
-    const leadDetailsCount = await Leads.count({
-      where: whereClause
-    });
+    const leadDetailsCount = await Leads.count({ where: whereClause });
 
     res.status(200).json({
       leadDetails,
-      leadCount: leadDetailsCount
+      leadCount: leadDetailsCount,
     });
-
   } catch (err) {
     console.error("Error details:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// ✅ Get Leads by ID
+
+// ✅ Get by ID
 exports.getLeadDetailsById = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
 
-    const leadDetails = await Leads.findOne({ where: { id, userId } });
-
+    const leadDetails = await Leads.findOne({ where: { id } });
     if (!leadDetails) {
       return res.status(404).json({ error: "Material not found or unauthorized access." });
     }
@@ -168,11 +109,11 @@ exports.getLeadDetailsById = async (req, res) => {
   }
 };
 
-// ✅ Update Leads
+
+// ✅ Update
 exports.updateLeadDetails = async (req, res) => {
   try {
-    const userId = req.userId;
-    const { id } = req.params; // Primary key (assumed)
+    const { id } = req.params;
     const {
       contact_name,
       contact_phone,
@@ -192,8 +133,7 @@ exports.updateLeadDetails = async (req, res) => {
       reason_for_lost_customers,
     } = req.body;
 
-    const leadDetails = await Leads.findOne({ where: { id, userId } });
-
+    const leadDetails = await Leads.findOne({ where: { id } });
     if (!leadDetails) {
       return res.status(404).json({ error: "Material not found or unauthorized access." });
     }
@@ -216,7 +156,6 @@ exports.updateLeadDetails = async (req, res) => {
       remarks,
       reason_for_lost_customers,
     });
-
     return res.status(200).json({ message: "Material updated successfully.", leadDetails });
   } catch (err) {
     console.error("Error updating material:", err);
@@ -224,19 +163,16 @@ exports.updateLeadDetails = async (req, res) => {
   }
 };
 
-// ✅ Delete Leads
+
+// ✅ Delete
 exports.deleteLeadDetails = async (req, res) => {
   try {
-    const userId = req.userId;
-    const { id } = req.params; // Primary key (assumed)
+    const { id } = req.params;
 
-    const deleted = await Leads.destroy({ where: { id, userId } });
-
+    const deleted = await Leads.destroy({ where: { id } });
     if (!deleted) {
       return res.status(404).json({ error: "Material not found or unauthorized access." });
     }
-
-    // await material.destroy();
 
     return res.status(200).json({ message: "Material deleted successfully." });
   } catch (err) {
@@ -246,30 +182,32 @@ exports.deleteLeadDetails = async (req, res) => {
 };
 
 
+// ✅ Get Lead Source Details
 exports.getLeadSourceDetails = async (req, res) => {
   try {
-    const userId = req.userId;
-    const leadSourceDetails = await LeadSource.findAll({ where: { userId } });
+    const leadSourceDetails = await LeadSource.findAll();
     res.json(leadSourceDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+
+// ✅ Get Lead Stage Details
 exports.getLeadStageDetails = async (req, res) => {
   try {
-    const userId = req.userId;
-    const leadStageDetails = await LeadStage.findAll({ where: { userId } });
+    const leadStageDetails = await LeadStage.findAll();
     res.json(leadStageDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+
+// ✅ Get Team Member Details
 exports.getTeamMemberDetails = async (req, res) => {
   try {
-    const userId = req.userId;
-    const teamMemberDetails = await TeamMember.findAll({ where: { userId } });
+    const teamMemberDetails = await TeamMember.findAll();
     res.json(teamMemberDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });

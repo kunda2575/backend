@@ -15,10 +15,7 @@ const paymentTypeMaster = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false
         },
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+       
     },
     {
         tableName: 'payment_type_masters',

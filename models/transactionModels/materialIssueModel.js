@@ -34,10 +34,7 @@ const MaterialIssue = sequelize.define(
             type: DataTypes.DATEONLY,
             allowNull: false
         },
-        userId: {
-            type: DataTypes.INTEGER,
-            allowNull: true
-        }
+       
     },
     {
         tableName: 'material_issue',  // Specify the table name

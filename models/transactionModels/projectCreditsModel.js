@@ -31,10 +31,7 @@ const ProjectCredits = sequelize.define('ProjectCredits', {
     type: DataTypes.STRING,
     allowNull: false
   },
-   userId: {
-          type: DataTypes.INTEGER,
-          allowNull: false  // Assuming userId should be mandatory for every expenditure record
-      }
+  
 }, {
   tableName: 'project_credits',
   timestamps: true

@@ -5,7 +5,7 @@ exports.createLostReasons = async (req, res) => {
   try {
     const userId = req.userId;
     const { lostReason } = req.body;
-    const newLostReasons = await LostReasons.create({ lostReason,userId});
+    const newLostReasons = await LostReasons.create({ lostReason});
     res.status(201).json(newLostReasons);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -16,7 +16,7 @@ exports.createLostReasons = async (req, res) => {
 exports.getLostReasons = async (req, res) => {
   try {
     const userId = req.userId;
-    const lostReason = await LostReasons.findAll({ where: { userId } });
+    const lostReason = await LostReasons.findAll();
     res.json(lostReason);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -29,7 +29,7 @@ exports.updateLostReasons = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
     const { lostReason } = req.body;
-    const lostReasons = await LostReasons.findOne({ where: {id, userId } });
+    const lostReasons = await LostReasons.findOne({ where: {id } });
     if (!lostReasons) return res.status(404).json({ error: "Lost Reasons not found" });
 
    
@@ -47,7 +47,7 @@ exports.deleteLostReasons = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const deleted = await LostReasons.destroy({ where: { id,userId } });
+    const deleted = await LostReasons.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ error: "Lost Reason not found" });
     res.json({ message: "Lost Reason deleted successfully" });
   } catch (err) {

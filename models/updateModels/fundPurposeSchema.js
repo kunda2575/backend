@@ -13,10 +13,7 @@ const FundPurpose = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false
         },
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+       
     },
     {
         tableName: 'fund_purpose',

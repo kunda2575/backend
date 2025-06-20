@@ -5,7 +5,7 @@ exports.createUnitType = async (req, res) => {
   try {
     const userId = req.userId;
     const { unit } = req.body;
-    const newUnitType = await UnitType.create({ unit,userId});
+    const newUnitType = await UnitType.create({ unit});
     res.status(201).json(newUnitType);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -16,7 +16,7 @@ exports.createUnitType = async (req, res) => {
 exports.getUnitTypes = async (req, res) => {
   try {
     const userId = req.userId;
-    const unitType = await UnitType.findAll({ where: { userId } });
+    const unitType = await UnitType.findAll();
     res.json(unitType);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -29,7 +29,7 @@ exports.updateUnitType = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
     const { unit } = req.body;
-    const unitTypes = await UnitType.findOne({ where: {id, userId } });
+    const unitTypes = await UnitType.findOne({ where: {id } });
     if (!unitTypes) return res.status(404).json({ error: "Unit Types not found" });
 
    
@@ -47,7 +47,7 @@ exports.deleteUnitType = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const deleted = await UnitType.destroy({ where: { id,userId } });
+    const deleted = await UnitType.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ error: "Unit Types not found" });
     res.json({ message: "Unit Types deleted successfully" });
   } catch (err) {

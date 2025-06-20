@@ -43,7 +43,7 @@ exports.createProjectDetails = async (req, res) => {
     const projectBrouchers = files.map(file => file.filename).join(',');
 
     const newProjectDetails = await ProjectMaster.create({
-      userId,
+    
       projectName,
       projectOwner,
       projectContact,
@@ -63,7 +63,7 @@ exports.createProjectDetails = async (req, res) => {
 exports.getProjectDetails = async (req, res) => {
   try {
     const userId = req.userId;
-    const projectDetails = await ProjectMaster.findAll({ where: { userId } });
+    const projectDetails = await ProjectMaster.findAll();
 
     const updatedProperties = projectDetails.map(property => ({
       ...property.toJSON(),
@@ -92,7 +92,7 @@ exports.updateProjectsDetails = async (req, res) => {
       projectEndDate
     } = req.body;
 
-    const projectDetails = await ProjectMaster.findOne({ where: { id, userId } });
+    const projectDetails = await ProjectMaster.findOne({ where: { id } });
     if (!projectDetails) return res.status(404).json({ error: "Project not found" });
 
     const files = req.files || [];
@@ -139,7 +139,7 @@ exports.deleteProjectsDetails = async (req, res) => {
     const { id } = req.params;
 
     // Find the project before deleting
-    const project = await ProjectMaster.findOne({ where: { id, userId } });
+    const project = await ProjectMaster.findOne({ where: { id } });
     if (!project) return res.status(404).json({ error: "Project not found" });
 
     // Delete associated files
@@ -152,7 +152,7 @@ exports.deleteProjectsDetails = async (req, res) => {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     });
 
-    await ProjectMaster.destroy({ where: { id, userId } });
+    await ProjectMaster.destroy({ where: { id } });
     res.json({ message: "Project deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });

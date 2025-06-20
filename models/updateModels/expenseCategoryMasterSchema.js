@@ -17,10 +17,7 @@ const ExpenseCategoryMaster = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false
         },
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+       
     },
     {
         tableName: 'expense_category_master',

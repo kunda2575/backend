@@ -9,7 +9,7 @@ const depositBank = require('../../models/updateModels/bankMasterSchema');
 exports.createProjectCredits = async (req, res) => {
     try {
         const userId = req.userId;
-        if (!userId) return res.status(400).json({ error: "User ID is required." });
+        // if (!userId) return res.status(400).json({ error: "User ID is required." });
 
         const {
             date,
@@ -28,7 +28,7 @@ exports.createProjectCredits = async (req, res) => {
             purpose,
             amount_inr,
             payment_mode,
-            userId
+            // userId
         });
 
         return res.status(201).json(newProjectCredits);
@@ -40,11 +40,11 @@ exports.createProjectCredits = async (req, res) => {
 exports.getProjectCreditsDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        console.log("Decoded JWT payload:", req.userId);  // Ensure userId is present
+        // console.log("Decoded JWT payload:", req.userId);  // Ensure userId is present
 
-        if (!userId) {
-            return res.status(400).json({ error: "User ID is required." });
-        }
+        // if (!userId) {
+        //     return res.status(400).json({ error: "User ID is required." });
+        // }
 
         const skip = parseInt(req.query.skip) || 0;
         const limit = parseInt(req.query.limit) || 10;
@@ -73,15 +73,12 @@ exports.getProjectCreditsDetails = async (req, res) => {
 
         console.log("Filters applied:", filters);
 
-        let whereClause = { userId };
-        if (filters.length > 0) {
-            whereClause = {
-                [Op.and]: [
-                    { userId },
-                    { [Op.or]: filters }
-                ]
-            };
-        }
+    let whereClause = {};
+    if (filters.length > 0) {
+      whereClause = {
+        [Op.and]: [{ [Op.or]: filters }]
+      };
+    }
 
         console.log("Final where clause:", whereClause);
 
@@ -118,7 +115,7 @@ exports.getProjectCreditsById = async (req, res) => {
         const { id } = req.params;
 
 
-        const projectCredits = await ProjectCredit.findOne({ where: { id, userId } });
+        const projectCredits = await ProjectCredit.findOne({ where: { id } });
 
         if (!projectCredits) {
             return res.status(404).json({ error: "ProjectCredits not found" });
@@ -158,7 +155,7 @@ exports.updateProjectCredits = async (req, res) => {
 
         } = req.body;
 
-        const projectCreditsToUpdate = await ProjectCredit.findOne({ where: { id, userId } });
+        const projectCreditsToUpdate = await ProjectCredit.findOne({ where: { id } });
 
         if (!projectCreditsToUpdate) {
             return res.status(404).json({ error: "ProjectCredits not found or unauthorized access." });
@@ -190,7 +187,7 @@ exports.deleteProjectCredits = async (req, res) => {
         const userId = req.userId;
         const { id } = req.params;
 
-        const deleted = await ProjectCredit.destroy({ where: { id, userId } });
+        const deleted = await ProjectCredit.destroy({ where: { id } });
 
         if (!deleted) {
             return res.status(404).json({ error: "Project Credits not found or unauthorized access." });
@@ -207,9 +204,9 @@ exports.deleteProjectCredits = async (req, res) => {
 exports.getSourceDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        if (!userId) return res.status(400).json({ error: "User ID not found" });
+        // if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-        const sourceDetails = await Source.findAll({ where: { userId } });
+        const sourceDetails = await Source.findAll();
         res.json(sourceDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -220,9 +217,9 @@ exports.getSourceDetails = async (req, res) => {
 exports.getPurposeDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        if (!userId) return res.status(400).json({ error: "User ID not found" });
+        // if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-        const purposeDetails = await Purpose.findAll({ where: { userId } });
+        const purposeDetails = await Purpose.findAll();
         res.json(purposeDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -233,9 +230,9 @@ exports.getPurposeDetails = async (req, res) => {
 exports.getDepositeBankDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        if (!userId) return res.status(400).json({ error: "User ID not found" });
+        // if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-        const depositeBankDetails = await depositBank.findAll({ where: { userId } });
+        const depositeBankDetails = await depositBank.findAll();
         res.json(depositeBankDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -246,9 +243,9 @@ exports.getDepositeBankDetails = async (req, res) => {
 exports.getPaymentModeDetails = async (req, res) => {
     try {
         const userId = req.userId;
-        if (!userId) return res.status(400).json({ error: "User ID not found" });
+        // if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-        const paymentModeDetails = await PaymentMode.findAll({ where: { userId } });
+        const paymentModeDetails = await PaymentMode.findAll();
         res.json(paymentModeDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });

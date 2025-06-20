@@ -52,7 +52,7 @@ exports.uploadFields = multerInstance.fields([
 exports.createcustomerPayments = async (req, res) => {
   try {
     const userId = req.userId;
-    if (!userId) return res.status(400).json({ error: "User ID is required." });
+    // if (!userId) return res.status(400).json({ error: "User ID is required." });
 
     const {
       customer_id,
@@ -103,7 +103,7 @@ exports.createcustomerPayments = async (req, res) => {
       flat_hand_over_date,
       flat_area,
       no_of_bhk,
-      userId
+    
     });
 
     return res.status(201).json(newPayment);
@@ -115,7 +115,7 @@ exports.createcustomerPayments = async (req, res) => {
 exports.getcustomerPaymentsDetails = async (req, res) => {
   try {
     const userId = req.userId;
-    if (!userId) return res.status(400).json({ error: "User ID is required." });
+    // if (!userId) return res.status(400).json({ error: "User ID is required." });
 
     const skip = parseInt(req.query.skip) || 0;
     const limit = parseInt(req.query.limit) || 10;
@@ -127,15 +127,14 @@ exports.getcustomerPaymentsDetails = async (req, res) => {
     if (req.query.payment_mode) filters.push({ payment_mode: { [Op.in]: parseArray(req.query.payment_mode) } });
     if (req.query.funding_bank) filters.push({ funding_bank: { [Op.in]: parseArray(req.query.funding_bank) } });
 
-    let whereClause = { userId };
+   let whereClause = {};
     if (filters.length > 0) {
       whereClause = {
-        userId,
-        [Op.and]: filters
+        [Op.and]: [{ [Op.or]: filters }]
       };
     }
 
-    console.log("🔍 whereClause:", whereClause);
+    // console.log("🔍 whereClause:", whereClause);
 
     const data = await customerPayment.findAll({
       where: whereClause,
@@ -163,7 +162,7 @@ exports.getcustomerPaymentsById = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    const item = await customerPayment.findOne({ where: { id, userId } });
+    const item = await customerPayment.findOne({ where: { id} });
     if (!item) return res.status(404).json({ error: "Not found" });
 
     const formatted = {
@@ -209,7 +208,7 @@ exports.updatecustomerPayments = async (req, res) => {
     } = req.body;
 
     const customerPaymentsToUpdate = await customerPayment.findOne({
-      where: { id, userId },
+      where: { id },
     });
 
     if (!customerPaymentsToUpdate) {
@@ -276,7 +275,7 @@ exports.deletecustomerPayments = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    const deleted = await customerPayment.destroy({ where: { id, userId } });
+    const deleted = await customerPayment.destroy({ where: { id } });
 
     if (!deleted) {
       return res.status(404).json({ error: "customer Payments not found or unauthorized access." });
@@ -293,9 +292,9 @@ exports.deletecustomerPayments = async (req, res) => {
 exports.getpaymentTypeDetails = async (req, res) => {
   try {
     const userId = req.userId;
-    if (!userId) return res.status(400).json({ error: "User ID not found" });
+    // if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-    const paymentTypes = await paymentType.findAll({ where: { userId } });
+    const paymentTypes = await paymentType.findAll();
     res.json(paymentTypes);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -306,9 +305,9 @@ exports.getpaymentTypeDetails = async (req, res) => {
 exports.getVerifiedByDetails = async (req, res) => {
   try {
     const userId = req.userId;
-    if (!userId) return res.status(400).json({ error: "User ID not found" });
+    // if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-    const verifiedByDetails = await verifiedBy.findAll({ where: { userId } });
+    const verifiedByDetails = await verifiedBy.findAll();
     res.json(verifiedByDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -319,9 +318,9 @@ exports.getVerifiedByDetails = async (req, res) => {
 exports.getfundingBankDetails = async (req, res) => {
   try {
     const userId = req.userId;
-    if (!userId) return res.status(400).json({ error: "User ID not found" });
+    // if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-    const fundingByDetails = await fundingBank.findAll({ where: { userId } });
+    const fundingByDetails = await fundingBank.findAll();
     res.json(fundingByDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -332,9 +331,9 @@ exports.getfundingBankDetails = async (req, res) => {
 exports.getPaymentModeDetails = async (req, res) => {
   try {
     const userId = req.userId;
-    if (!userId) return res.status(400).json({ error: "User ID not found" });
+    // if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-    const paymentModeDetails = await PaymentMode.findAll({ where: { userId } });
+    const paymentModeDetails = await PaymentMode.findAll();
     res.json(paymentModeDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -345,9 +344,9 @@ exports.getPaymentModeDetails = async (req, res) => {
 exports.getCustomerDetails = async (req, res) => {
   try {
     const userId = req.userId;
-    if (!userId) return res.status(400).json({ error: "User ID not found" });
+    // if (!userId) return res.status(400).json({ error: "User ID not found" });
 
-    const customerDetails = await customer.findAll({ where: { userId } });
+    const customerDetails = await customer.findAll();
     res.json(customerDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });

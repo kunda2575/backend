@@ -78,11 +78,7 @@ const leads = sequelize.define(
             allowNull: false,
         },
 
-        userId: {
-            type: DataTypes.INTEGER,
-            allowNull: true
-        }
-
+       
     },
     {
         tableName: 'lead_transaction',

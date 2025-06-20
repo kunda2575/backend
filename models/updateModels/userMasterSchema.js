@@ -30,10 +30,7 @@ const userMaster = sequelize.define(
             allowNull :false,
             unique:true
         },
-        userId:{
-            type:DataTypes.INTEGER,
-            allowNull:false
-        }
+       
     },{
         tableName :'user_masters',
         timestamps:true

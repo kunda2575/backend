@@ -5,7 +5,7 @@ exports.createPaymentType = async (req, res) => {
   try {
     const userId = req.userId;
     const { paymentType } = req.body;
-    const newPaymentType = await PaymentType.create({ paymentType,userId});
+    const newPaymentType = await PaymentType.create({ paymentType});
     res.status(201).json(newPaymentType);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -16,7 +16,7 @@ exports.createPaymentType = async (req, res) => {
 exports.getPaymentTypes = async (req, res) => {
   try {
     const userId = req.userId;
-    const paymentType = await PaymentType.findAll({ where: { userId } });
+    const paymentType = await PaymentType.findAll();
     res.json(paymentType);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -29,7 +29,7 @@ exports.updatePaymentType = async (req, res) => {
     const userId = req.userId;
     const { id } = req.params;
     const { paymentType } = req.body;
-    const paymentTypes = await PaymentType.findOne({ where: {id, userId } });
+    const paymentTypes = await PaymentType.findOne({ where: {id } });
     if (!paymentTypes) return res.status(404).json({ error: "Payment Type not found" });
 
    
@@ -47,7 +47,7 @@ exports.deletePaymentType = async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const deleted = await PaymentType.destroy({ where: { id,userId } });
+    const deleted = await PaymentType.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ error: "payment Type not found" });
     res.json({ message: "payment Type deleted successfully" });
   } catch (err) {
