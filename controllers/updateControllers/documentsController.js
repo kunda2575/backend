@@ -114,7 +114,7 @@ exports.deleteDocumentsDetails = async (req, res) => {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     });
 
-    await DocumentsMaster.destroy({ where: { id, userId } });
+    await DocumentsMaster.destroy({ where: { id } });
     res.json({ message: "Documents deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
