@@ -3,6 +3,8 @@ const MaterialIssue = require("../../models/transactionModels/materialIssueModel
 const materialMaster = require("../../models/updateModels/materialMasterSchema");
 const unitType = require("../../models/updateModels/unitTypeSchema");
 
+const { ValidationError } = require('sequelize');
+
 // ✅ Create MaterialIssue
 exports.createMaterialIssue = async (req, res) => {
   try {
@@ -95,7 +97,10 @@ exports.getMaterialIssuesDetails = async (req, res) => {
             materialIssuesDetailsCount
         });
     } catch (err) {
-        console.error("Error fetching materialIssues details:", err.message, err.stack);
+       if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
         return res.status(500).json({ error: "Failed to fetch materialIssues details." });
     }
 };

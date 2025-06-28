@@ -1,3 +1,4 @@
+const { ValidationError } = require('sequelize');
 
 const TeamMembers =require('../../models/updateModels/teamMembersSchema');
 
@@ -11,7 +12,11 @@ exports.createTeamMemberDetails = async (req,res) =>{
         res.status(201).json(newTeamMembersDetails)
 
     } catch (err) {
-        res.status(500).json({ error: err.message });
+         if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+   
     }
 }
 

@@ -1,3 +1,4 @@
+const { ValidationError } = require('sequelize');
 const MaterialMaster = require('../../models/updateModels/materialMasterSchema');
 
 // Create
@@ -13,7 +14,11 @@ exports.createMaterialMaster = async (req, res) => {
     const newMaterialMaster = await MaterialMaster.create({ material_id, materialName });
     res.status(201).json(newMaterialMaster);
   } catch (err) {
-    res.status(500).json({ error: err.message }); // keep this for unhandled server errors
+     if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+   
   }
 };
 

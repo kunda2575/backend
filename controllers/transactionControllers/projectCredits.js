@@ -5,6 +5,8 @@ const Purpose = require('../../models/updateModels/fundPurposeSchema');
 const PaymentMode = require('../../models/updateModels/paymentModeMasterSchema');
 const depositBank = require('../../models/updateModels/bankMasterSchema');
 
+const { ValidationError } = require('sequelize');
+
 // ✅ Create projectCredits
 exports.createProjectCredits = async (req, res) => {
     try {
@@ -33,7 +35,10 @@ exports.createProjectCredits = async (req, res) => {
 
         return res.status(201).json(newProjectCredits);
     } catch (err) {
-        console.error("Error creating project Credits:", err);
+        if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
         return res.status(500).json({ error: err.message });
     }
 };

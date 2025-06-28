@@ -1,4 +1,5 @@
 const BankMaster = require('../../models/updateModels/bankMasterSchema');
+const { ValidationError } = require('sequelize');
 
 // Create
 exports.createBankDetails = async (req, res) => {
@@ -9,7 +10,11 @@ exports.createBankDetails = async (req, res) => {
     const newBankDetails = await BankMaster.create({ bankName, ifscCode, branch });
     res.status(201).json(newBankDetails);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+   
   }
 };
 

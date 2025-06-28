@@ -1,3 +1,4 @@
+const { ValidationError } = require('sequelize');
 const VendorMaster = require('../../models/updateModels/vendorMasterSchema');
 
 // Create
@@ -8,7 +9,11 @@ exports.createVendor = async (req, res) => {
     const newVendor = await VendorMaster.create({vendorId, vendorName,services,phone,address ,city});
     res.status(201).json(newVendor);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+     if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+   
   }
 };
 

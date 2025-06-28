@@ -4,8 +4,11 @@ const Leads = require("../../models/transactionModels/leadsModel");
 const LeadSource = require("../../models/updateModels/leadSourceSchema");
 const LeadStage = require("../../models/updateModels/leadStageSchema");
 const TeamMember = require("../../models/updateModels/teamMembersSchema");
+// At the top of your controller file
+const { ValidationError } = require('sequelize');
 
-// ✅ Create
+
+// ✅ Create Leads Details
 exports.createLeadsDetails = async (req, res) => {
   try {
     const {
@@ -45,12 +48,21 @@ exports.createLeadsDetails = async (req, res) => {
       remarks,
       reason_for_lost_customers,
     });
-    res.status(201).json(newLeadDetails);
+
+    // Send success response
+    return res.status(201).json(newLeadDetails);
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    // ✅ Sequelize validation error
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+
+    // 🧨 General server error
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
-
 
 // ✅ Read
 exports.getLeadDetails = async (req, res) => {

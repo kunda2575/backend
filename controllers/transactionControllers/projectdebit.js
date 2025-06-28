@@ -5,6 +5,8 @@ const PayedTo = require('../../models/updateModels/vendorMasterSchema');
 const PaymentMode = require('../../models/updateModels/paymentModeMasterSchema');
 const PaymentBank = require('../../models/updateModels/bankMasterSchema');
 
+const { ValidationError } = require('sequelize');
+
 // ✅ Create projectDebit
 exports.createProjectDebit = async (req, res) => {
     try {
@@ -110,7 +112,10 @@ exports.getProjectDebitDetails = async (req, res) => {
             projectDebitDetailsCount
         });
     } catch (err) {
-        console.error("Error fetching projectDebit details:", err.message, err.stack);
+        if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
         return res.status(500).json({ error: "Failed to fetch projectDebit details." });
     }
 };

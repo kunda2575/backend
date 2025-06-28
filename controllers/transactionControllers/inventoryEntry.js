@@ -4,6 +4,8 @@ const unitType = require("../../models/updateModels/unitTypeSchema");
 const vendor = require('../../models/updateModels/vendorMasterSchema');
 const materialMaster = require('../../models/updateModels/materialMasterSchema');
 
+const { ValidationError } = require('sequelize');
+
 const fs = require("fs");
 
 const multer = require("multer");
@@ -22,10 +24,10 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-  },
+     const ext = path.extname(file.originalname);
+     const uniqueName = `${file.fieldname}-${uuidv4()}${ext}`; // ✅ use uuid
+     cb(null, uniqueName);
+   },
 });
 
 
@@ -66,7 +68,10 @@ console.log("Uploaded files:", req.files);
 
     res.status(201).json({ success: true, data: newEntry });
   } catch (error) {
-    console.error("Error creating inventory entry:", error);
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -79,7 +84,7 @@ const  getInventaryDetails = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
 
     const conditions = [];
-    const parseArray = value => (value && value !== '[]') ? value.split(',').map(item => item.trim()) : [];
+     const parseArray = (value) => value ? value.split(',') : [];
 
     if (req.query.material_id) {
       conditions.push({ material_id: { [Op.in]: parseArray(req.query.material_id) } });
@@ -107,9 +112,7 @@ const  getInventaryDetails = async (req, res) => {
 
 
     const inventoryDetails = await inventoryEntry.findAll({
-      where: whereClause,
-      offset: skip,
-      limit: limit,
+      where: whereClause, offset: skip, limit
     });
 
     const updatedProperties = inventoryDetails.map(property => ({

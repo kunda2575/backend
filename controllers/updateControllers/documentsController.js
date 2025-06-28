@@ -15,10 +15,10 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const filename = `${file.fieldname}-${uuidv4()}${ext}`;
-    cb(null, filename);
-  },
+     const ext = path.extname(file.originalname);
+     const uniqueName = `${file.fieldname}-${uuidv4()}${ext}`; // ✅ use uuid
+     cb(null, uniqueName);
+   },
 });
 
 exports.upload = multer({ storage });

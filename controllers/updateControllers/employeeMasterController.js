@@ -1,8 +1,11 @@
+const { ValidationError } = require('sequelize');
 const EmployeeMaster = require('../../models/updateModels/employeeMasterSchema');
 const { Op } = require("sequelize");
 const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
+const { v4: uuidv4 } = require('uuid');
+
 
 // 🔐 Multer storage config
 const storage = multer.diskStorage({
@@ -14,9 +17,9 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
-    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+    const uniqueName = `${file.fieldname}-${uuidv4()}${ext}`; // ✅ use uuid
+    cb(null, uniqueName);
   },
 });
 
@@ -70,8 +73,11 @@ exports.createEmployeeDetails = async (req, res) => {
 
     res.status(201).json(newEmployee);
   } catch (err) {
-    console.error('Error creating employee:', err);
-    res.status(500).json({ error: err.message });
+     if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+   
   }
 };
 

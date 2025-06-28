@@ -1,3 +1,4 @@
+const { ValidationError } = require('sequelize');
 const DepartmentMaster = require("../../models/updateModels/departmentMasterSchema");
 
 // Create 
@@ -9,7 +10,11 @@ exports.createDepartmentDetails = async (req, res) => {
         const newDepartment = await DepartmentMaster.create({ departmentMaster,departmentID });
         res.status(201).json(newDepartment);
     } catch (error) {
-        res.status(500).json({ error: error.message })
+         if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+   
     }
 };
 

@@ -1,3 +1,4 @@
+const { ValidationError } = require('sequelize');
 const ProjectMaster = require('../../models/updateModels/projectMasterSchema');
 const fs = require("fs");
 const multer = require("multer");
@@ -17,10 +18,10 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-  },
+     const ext = path.extname(file.originalname);
+     const uniqueName = `${file.fieldname}-${uuidv4()}${ext}`; // ✅ use uuid
+     cb(null, uniqueName);
+   },
 });
 
 // Export multer upload middleware
@@ -55,7 +56,11 @@ exports.createProjectDetails = async (req, res) => {
 
     res.status(201).json(newProjectDetails);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+     if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+   
   }
 };
 

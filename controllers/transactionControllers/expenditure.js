@@ -5,6 +5,8 @@ const Expense = require('../../models/updateModels/expenseCategoryMasterSchema')
 const PaymentMode = require('../../models/updateModels/paymentModeMasterSchema');
 const PaymentBank = require('../../models/updateModels/bankMasterSchema');
 
+const { ValidationError } = require('sequelize');
+
 const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
@@ -30,10 +32,10 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-  },
+     const ext = path.extname(file.originalname);
+     const uniqueName = `${file.fieldname}-${uuidv4()}${ext}`; // ✅ use uuid
+     cb(null, uniqueName);
+   },
 });
 
 const multerInstance = multer({
@@ -83,7 +85,11 @@ const createExpenditure = async (req, res) => {
 
     return res.status(201).json(newExpenditure);
   } catch (err) {
-    console.error("Error creating expenditure:", err);
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+    
     return res.status(500).json({ error: err.message });
   }
 };

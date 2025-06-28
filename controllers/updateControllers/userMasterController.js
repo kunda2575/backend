@@ -1,3 +1,4 @@
+const { ValidationError } = require('sequelize');
 const UserMaster = require('../../models/updateModels/userMasterSchema');
 
 // Create
@@ -8,7 +9,11 @@ exports.createUser = async (req, res) => {
     const newUser = await UserMaster.create({ userName, password, role, phone, email});
     res.status(201).json(newUser);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+     if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+   
   }
 };
 
