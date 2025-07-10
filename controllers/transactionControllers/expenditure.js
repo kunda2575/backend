@@ -4,200 +4,184 @@ const Vendor = require('../../models/updateModels/vendorMasterSchema');
 const Expense = require('../../models/updateModels/expenseCategoryMasterSchema');
 const PaymentMode = require('../../models/updateModels/paymentModeMasterSchema');
 const PaymentBank = require('../../models/updateModels/bankMasterSchema');
+const { ValidationError } = require('sequelize')
 
-const { ValidationError } = require('sequelize');
+const s3 = require('../../config/r2config');
+const { uploadToR2 } = require('../../uploads/r2Uploader');
 
-const fs = require("fs");
-const multer = require("multer");
-const path = require("path");
-const { v4: uuidv4 } = require('uuid');
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
+const R2_ENDPOINT = process.env.R2_ENDPOINT;
 
-// ✅ Utility: Delete uploaded files
-const deleteFiles = (files) => {
-  files.forEach(file => {
-    const filePath = path.join(__dirname, "../../uploads", file);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-  });
-};
+const PUBLIC_R2_BASE_URL = process.env.PUBLIC_R2_BASE_URL;
 
-// ✅ Multer config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, "../../uploads");
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-     const ext = path.extname(file.originalname);
-     const uniqueName = `${file.fieldname}-${uuidv4()}${ext}`; // ✅ use uuid
-     cb(null, uniqueName);
-   },
-});
-
-const multerInstance = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-});
-
-const uploadFields = multerInstance.fields([
-  { name: 'payment_reference', maxCount: 1 },
-  { name: 'payment_evidence', maxCount: 1 }
-]);
+// ✅ Correct URL builder
+const getR2FileUrl = (key) => `${PUBLIC_R2_BASE_URL}/${key}`;
 
 // ✅ Create
 const createExpenditure = async (req, res) => {
   try {
-    const userId = req.userId;
-    // if (!userId) return res.status(400).json({ error: "User ID is required." });
-
     const {
       date, vendor_name, expense_head, amount_inr,
-      invoice_number, payment_mode, payment_bank
+      invoice_number, payment_mode, payment_bank,
+      documentTypes, documentTypes1
     } = req.body;
 
-    const payment_references = [];
-    const payment_evidences = [];
+    // Parse documentTypes arrays
+    const docTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : documentTypes || [];
+    const docTypes1 = typeof documentTypes1 === 'string' ? JSON.parse(documentTypes1) : documentTypes1 || [];
 
-    const files = req.files || {};
-    if (files['payment_reference']) {
-      files['payment_reference'].forEach(file => payment_references.push(file.filename));
-    }
-    if (files['payment_evidence']) {
-      files['payment_evidence'].forEach(file => payment_evidences.push(file.filename));
-    }
+    const fileFields = req.files || {};
 
-    const newExpenditure = await Expenditure.create({
+    // Combine files with their respective document types
+    const paymentReferenceFiles = (fileFields.payment_reference_files || []).map((file, i) => ({
+      ...file,
+      documentType: docTypes[i] || 'reference'
+    }));
+
+    const paymentEvidenceFiles = (fileFields.payment_evidence_files || []).map((file, i) => ({
+      ...file,
+      documentType: docTypes1[i] || 'evidence'
+    }));
+
+    const allFiles = [...paymentReferenceFiles];
+    const allFiles1 = [...paymentEvidenceFiles];
+
+    // Upload to R2
+    const uploaded = await uploadToR2(allFiles, 'payment_reference',vendor_name);
+    const uploadedKeys = uploaded.map(f => f.key).join(',');
+    const uploaded1 = await uploadToR2(allFiles1, 'payment_evidence',vendor_name);
+    const uploadedKeys1 = uploaded1.map(f => f.key).join(',');
+
+    // Create Expenditure record
+    const record = await Expenditure.create({
       date,
+      vendor_name,
       expense_head,
       amount_inr,
-      vendor_name,
       invoice_number,
       payment_mode,
       payment_bank,
-      payment_reference: payment_references.join(','),
-      payment_evidence: payment_evidences.join(','),
-    
+      payment_reference: uploadedKeys,
+      payment_evidence: uploadedKeys1,
     });
 
-    return res.status(201).json(newExpenditure);
+    console.log("uploaded data", record);
+    res.status(201).json(record);
+
   } catch (err) {
     if (err instanceof ValidationError) {
-      const messages = err.errors.map((e) => e.message);
-      return res.status(400).json({ error: messages.join(', ') });
+      return res.status(400).json({ error: err.errors.map(e => e.message).join(', ') });
     }
-    
     return res.status(500).json({ error: err.message });
   }
 };
 
+
 // ✅ Get All (with filters)
 const getExpenditureDetails = async (req, res) => {
   try {
-    const userId = req.userId;
-    // if (!userId) return res.status(400).json({ error: "User ID is required." });
-
     const skip = parseInt(req.query.skip) || 0;
     const limit = parseInt(req.query.limit) || 10;
+    const parseArr = v => v ? v.split(',') : [];
 
-    const filters = [];
-    const parseArray = (value) => value ? value.split(',') : [];
+    const filters = [
+      req.query.vendor_name && { vendor_name: { [Op.in]: parseArr(req.query.vendor_name) } },
+      req.query.expense_head && { expense_head: { [Op.in]: parseArr(req.query.expense_head) } },
+      req.query.payment_mode && { payment_mode: { [Op.in]: parseArr(req.query.payment_mode) } },
+      req.query.payment_bank && { payment_bank: { [Op.in]: parseArr(req.query.payment_bank) } }
+    ].filter(Boolean);
 
-    if (req.query.vendor_name) filters.push({ vendor_name: { [Op.in]: parseArray(req.query.vendor_name) } });
-    if (req.query.expense_head) filters.push({ expense_head: { [Op.in]: parseArray(req.query.expense_head) } });
-    if (req.query.payment_mode) filters.push({ payment_mode: { [Op.in]: parseArray(req.query.payment_mode) } });
-    if (req.query.payment_bank) filters.push({ payment_bank: { [Op.in]: parseArray(req.query.payment_bank) } });
+    const whereClause = filters.length
+      ? { [Op.and]: [{ [Op.or]: filters }] }
+      : {};
 
-    let whereClause = {};
-    if (filters.length > 0) {
-      whereClause = {
-        [Op.and]: [{ [Op.or]: filters }]
+    const data = await Expenditure.findAll({ where: whereClause, offset: skip, limit });
+    const count = await Expenditure.count({ where: whereClause });
+
+    const formatted = data.map(item => {
+      const json = item.toJSON();
+      return {
+        ...json,
+        payment_reference: json.payment_reference
+          ? json.payment_reference.split(',').map(getR2FileUrl)
+          : [],
+        payment_evidence: json.payment_evidence
+          ? json.payment_evidence.split(',').map(getR2FileUrl)
+          : []
       };
-    }
+    });
 
-    const expenditureDetails = await Expenditure.findAll({ where: whereClause, offset: skip, limit });
-
-    const updatedProperties = expenditureDetails.map(item => ({
-      ...item.toJSON(),
-      payment_reference: item.payment_reference ? item.payment_reference.split(",").map(img => `http://localhost:2026/uploads/${img}`) : [],
-      payment_evidence: item.payment_evidence ? item.payment_evidence.split(",").map(img => `http://localhost:2026/uploads/${img}`) : []
-    }));
-
-    const expenditureDetailsCount = await Expenditure.count({ where: whereClause });
-
-    return res.status(200).json({ updatedProperties, expenditureDetails, expenditureDetailsCount });
+    res.json({ expenditureDetails: formatted, expenditureDetailsCount: count });
   } catch (err) {
-    console.error("Error fetching expenditure details:", err.message);
-    return res.status(500).json({ error: "Failed to fetch expenditure details." });
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch details." });
   }
 };
 
 // ✅ Get by ID
 const getExpenditureById = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
+    if (!/^\d+$/.test(id)) return res.status(400).json({ error: "Invalid ID" });
 
-    if (!/^\d+$/.test(id)) {
-      return res.status(400).json({ error: "Invalid ID format. ID must be a number." });
-    }
+    const record = await Expenditure.findByPk(id);
+    if (!record) return res.status(404).json({ error: "Not found" });
 
-    const expenditure = await Expenditure.findOne();
-
-    if (!expenditure) {
-      return res.status(404).json({ error: "Expenditure not found" });
-    }
-
-    const updatedProperty = {
-      ...expenditure.toJSON(),
-      payment_reference: expenditure.payment_reference
-        ? expenditure.payment_reference.split(",").map(img => `http://localhost:2026/uploads/${img}`)
-        : [],
-      payment_evidence: expenditure.payment_evidence
-        ? expenditure.payment_evidence.split(",").map(img => `http://localhost:2026/uploads/${img}`)
-        : []
-    };
-
-    res.status(200).json({ success: true, data: updatedProperty });
-
-  } catch (error) {
-    console.error("Error fetching expenditure:", error);
+    const json = record.toJSON();
+    return res.json({
+      data: {
+        ...json,
+        payment_reference: json.payment_reference
+          ? json.payment_reference.split(',').map(getR2FileUrl)
+          : [],
+        payment_evidence: json.payment_evidence
+          ? json.payment_evidence.split(',').map(getR2FileUrl)
+          : [],
+      }
+    });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 };
-
-// ✅ Update
 const updateExpenditure = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
+    const existing = await Expenditure.findByPk(id);
+    if (!existing) return res.status(404).json({ error: "Not found" });
 
-    const expenditureToUpdate = await Expenditure.findOne({ where: { id } });
-    if (!expenditureToUpdate) return res.status(404).json({ error: "Expenditure not found" });
+    const fileFields = req.files || {};
 
-    let oldReferences = expenditureToUpdate.payment_reference ? expenditureToUpdate.payment_reference.split(',') : [];
-    let oldEvidences = expenditureToUpdate.payment_evidence ? expenditureToUpdate.payment_evidence.split(',') : [];
+    const documentTypes = JSON.parse(req.body.documentTypes || '[]');
+    const documentTypes1 = JSON.parse(req.body.documentTypes1 || '[]');
 
-    const newReferences = req.files['payment_reference']?.map(f => f.filename) || [];
-    const newEvidences = req.files['payment_evidence']?.map(f => f.filename) || [];
+    // === Payment Reference Files ===
+    const refFiles = (fileFields.payment_reference_files || []).map((file, i) => ({
+      ...file,
+      documentType: documentTypes[i] || 'Invoice'
+    }));
 
-    let finalReferences = oldReferences;
-    let finalEvidences = oldEvidences;
-
-    if (newReferences.length > 0) {
-      deleteFiles(oldReferences);
-      finalReferences = newReferences;
+    let paymentReferenceKeys = (existing.payment_reference || '').split(',').filter(Boolean);
+    if (refFiles.length) {
+      refFiles.forEach(f => deleteFromR2(f.key)); // cleanup old
+      const uploadedRefs = await uploadToR2(refFiles, 'payment_reference', req.body.vendor_name);
+      paymentReferenceKeys = uploadedRefs.map(f => f.key);
     }
 
-    if (newEvidences.length > 0) {
-      deleteFiles(oldEvidences);
-      finalEvidences = newEvidences;
+    // === Payment Evidence Files ===
+    const evdFiles = (fileFields.payment_evidence_files || []).map((file, i) => ({
+      ...file,
+      documentType: documentTypes1[i] || 'Receipt'
+    }));
+
+    let paymentEvidenceKeys = (existing.payment_evidence || '').split(',').filter(Boolean);
+    if (evdFiles.length) {
+      evdFiles.forEach(f => deleteFromR2(f.key));
+      const uploadedEvd = await uploadToR2(evdFiles, 'payment_evidence', req.body.vendor_name);
+      paymentEvidenceKeys = uploadedEvd.map(f => f.key);
     }
 
-    await expenditureToUpdate.update({
+    await existing.update({
       date: req.body.date,
       vendor_name: req.body.vendor_name,
       expense_head: req.body.expense_head,
@@ -205,35 +189,37 @@ const updateExpenditure = async (req, res) => {
       invoice_number: req.body.invoice_number,
       payment_mode: req.body.payment_mode,
       payment_bank: req.body.payment_bank,
-      payment_reference: finalReferences.join(','),
-      payment_evidence: finalEvidences.join(',')
+      payment_reference: paymentReferenceKeys.join(','),
+      payment_evidence: paymentEvidenceKeys.join(',')
     });
 
-    return res.status(200).json({ message: "Expenditure updated successfully.", data: expenditureToUpdate });
+    return res.json({ message: "Updated", data: existing });
   } catch (err) {
-    console.error("Error updating expenditure:", err.message);
-    return res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 };
-
-// ✅ Delete
 const deleteExpenditure = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
+    const existing = await Expenditure.findByPk(id);
+    if (!existing) return res.status(404).json({ error: "Not found" });
 
-    const expenditure = await Expenditure.findOne({ where: { id } });
-    if (!expenditure) return res.status(404).json({ error: "Expenditure not found or unauthorized access." });
+    const keys = existing.payment_reference ? existing.payment_reference.split(',').filter(Boolean) : [];
 
-    const refFiles = expenditure.payment_reference ? expenditure.payment_reference.split(',') : [];
-    const evidenceFiles = expenditure.payment_evidence ? expenditure.payment_evidence.split(',') : [];
-    deleteFiles([...refFiles, ...evidenceFiles]);
+    if (keys.length > 0) {
+      await s3.deleteObjects({
+        Bucket: R2_BUCKET_NAME,
+        Delete: { Objects: keys.map(k => ({ Key: k })), Quiet: true }
+      }).promise();
+    }
 
-    await expenditure.destroy();
-    return res.status(200).json({ message: "Expenditure and related files deleted successfully." });
+    await existing.destroy();
+    return res.json({ message: "Deleted successfully" });
+
   } catch (err) {
-    console.error("Error deleting expenditure:", err);
-    return res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -280,7 +266,7 @@ const getPaymentBankDetails = async (req, res) => {
 
 // ✅ Export all
 module.exports = {
-  uploadFields,
+
   createExpenditure,
   getExpenditureDetails,
   getExpenditureById,

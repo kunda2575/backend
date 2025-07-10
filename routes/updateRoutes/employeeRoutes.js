@@ -6,9 +6,9 @@ const verifyToken = require("../../middleware/verfiyToken");
 // File Upload Middleware (Multer)
 const upload = employeeRoutes.upload;
 
-router.post("/",verifyToken, upload.array("idProof1"),employeeRoutes.createEmployeeDetails)
+router.post("/",verifyToken, upload.any(),employeeRoutes.createEmployeeDetails)
 router.get("/",verifyToken,employeeRoutes.getEmployeeDetails)
-router.put("/:id",verifyToken, upload.array("idProof1"),employeeRoutes.updateEmployeesDetails)
+router.put("/:id",verifyToken, upload.any(),employeeRoutes.updateEmployeesDetails)
 router.delete("/:id",verifyToken,employeeRoutes.deleteEmployeesDetails)
 
 module.exports=router

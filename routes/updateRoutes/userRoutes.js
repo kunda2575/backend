@@ -5,6 +5,7 @@ const userMaster = require('../../controllers/updateControllers/userMasterContro
 const verifyToken = require('../../middleware/verfiyToken');
 
 router.post('/', verifyToken,userMaster.createUser);
+router.get('/project', userMaster.getProjectDetails);
 router.get('/', verifyToken,userMaster.getUsers);
 router.put('/:id', verifyToken,userMaster.updateUser);
 router.delete('/:id', verifyToken,userMaster.deleteUser);

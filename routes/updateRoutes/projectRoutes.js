@@ -11,7 +11,7 @@ const upload = projectController.upload;
 router.post(
   "/",
   verifyToken,
-  upload.array("projectBrouchers"), // Field name should match form
+  upload.any(), // Field name should match form
   projectController.createProjectDetails
 );
 
@@ -22,7 +22,7 @@ router.get("/", verifyToken, projectController.getProjectDetails);
 router.put(
   "/:id",
   verifyToken,
-  upload.array("projectBrouchers"), // Allow file updates
+  upload.any(), // Allow file updates
   projectController.updateProjectsDetails
 );
 

@@ -1,83 +1,93 @@
 const { ValidationError } = require('sequelize');
 const ProjectMaster = require('../../models/updateModels/projectMasterSchema');
-const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
 const { v4: uuidv4 } = require('uuid');
+const { uploadToR2 } = require('../../uploads/r2Uploader');
+const s3 = require('../../config/r2config');
 
-// Multer storage config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, "../../uploads");
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
+const R2_ENDPOINT = process.env.R2_ENDPOINT;
 
-    // Create directory if not exists
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
+const PUBLIC_R2_BASE_URL = process.env.PUBLIC_R2_BASE_URL;
 
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-     const ext = path.extname(file.originalname);
-     const uniqueName = `${file.fieldname}-${uuidv4()}${ext}`; // ✅ use uuid
-     cb(null, uniqueName);
-   },
-});
+// ✅ Correct URL builder
+const getR2FileUrl = (key) => `${PUBLIC_R2_BASE_URL}/${key}`;
 
-// Export multer upload middleware
-exports.upload = multer({ storage });
+
+// Multer memory storage for buffer uploads
+const storage = multer({ storage: multer.memoryStorage() });
+exports.upload = storage;
 
 // ✅ Create Project
 exports.createProjectDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const {
       projectName,
       projectOwner,
       projectContact,
       projectAddress,
-      projectStartDate,
-      projectEndDate
+      expectedStartDate,
+      expectedEndDate,
+      documentTypes
     } = req.body;
 
     const files = req.files || [];
-    const projectBrouchers = files.map(file => file.filename).join(',');
+
+    if (!files.length) {
+      return res.status(400).json({ error: "No files uploaded" });
+    }
+
+    let parsedDocTypes = [];
+    try {
+      parsedDocTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : [];
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid documentTypes format' });
+    }
+
+    const filesWithDocTypes = files.map((file, i) => ({
+      ...file,
+      documentType: parsedDocTypes[i] || 'unknown'
+    }));
+
+
+     const uploadedFiles = await uploadToR2(filesWithDocTypes, "project_master", "system_upload");
+    const uploadedKeys = uploadedFiles.map(file => file.key);
+    const projectBrouchers = uploadedKeys.join(',');
 
     const newProjectDetails = await ProjectMaster.create({
-    
       projectName,
       projectOwner,
       projectContact,
       projectAddress,
-      projectBrouchers,
-      projectStartDate,
-      projectEndDate
+      expectedStartDate,
+      expectedEndDate,
+      projectBrouchers
     });
 
     res.status(201).json(newProjectDetails);
   } catch (err) {
-     if (err instanceof ValidationError) {
+    if (err instanceof ValidationError) {
       const messages = err.errors.map((e) => e.message);
       return res.status(400).json({ error: messages.join(', ') });
     }
-   
+    res.status(500).json({ error: err.message });
   }
 };
 
 // ✅ Read Project Details
 exports.getProjectDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const projectDetails = await ProjectMaster.findAll();
 
-    const updatedProperties = projectDetails.map(property => ({
-      ...property.toJSON(),
-      projectBroucher: property.projectBrouchers
-        ? property.projectBrouchers.split(",").map(img => `http://localhost:2026/uploads/${img}`)
+    const formatted = projectDetails.map(doc => ({
+      ...doc.toJSON(),
+      projectBrouchers: doc.projectBrouchers
+        ? doc.projectBrouchers.split(',').map(getR2FileUrl)
         : []
     }));
 
-    res.status(200).json(updatedProperties);
+    res.status(200).json(formatted);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -86,52 +96,78 @@ exports.getProjectDetails = async (req, res) => {
 // ✅ Update Project Details
 exports.updateProjectsDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
     const {
       projectName,
       projectOwner,
       projectContact,
       projectAddress,
-      projectStartDate,
-      projectEndDate
+      expectedStartDate,
+      expectedEndDate,
+      documentTypes,
+      retainedFiles // JSON stringified array of keys
     } = req.body;
 
-    const projectDetails = await ProjectMaster.findOne({ where: { id } });
-    if (!projectDetails) return res.status(404).json({ error: "Project not found" });
-
     const files = req.files || [];
-    let projectBrouchers;
 
-    if (files.length > 0) {
-      // Delete old files
-      const oldFiles = projectDetails.projectBrouchers
-        ? projectDetails.projectBrouchers.split(',')
-        : [];
+    const project = await ProjectMaster.findOne({ where: { id } });
+    if (!project) return res.status(404).json({ error: "Project not found" });
 
-      oldFiles.forEach(file => {
-        const filePath = path.join(__dirname, "../../uploads", file);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      });
-
-      // New uploaded files
-      projectBrouchers = files.map(file => file.filename).join(',');
-    } else {
-      // Keep old
-      projectBrouchers = projectDetails.projectBrouchers;
+    // Parse retained file keys
+    let retainedFileKeys = [];
+    try {
+      retainedFileKeys = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : [];
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid retainedFiles format' });
     }
 
-    // Update fields
-    projectDetails.projectName = projectName;
-    projectDetails.projectOwner = projectOwner;
-    projectDetails.projectContact = projectContact;
-    projectDetails.projectAddress = projectAddress;
-    projectDetails.projectBrouchers = projectBrouchers;
-    projectDetails.projectStartDate = projectStartDate;
-    projectDetails.projectEndDate = projectEndDate;
+    const oldDocs = project.projectBrouchers ? project.projectBrouchers.split(',') : [];
+    const filesToDelete = oldDocs.filter(key => !retainedFileKeys.includes(key));
 
-    await projectDetails.save();
-    res.status(200).json(projectDetails);
+    // Delete removed files from R2
+    if (filesToDelete.length > 0) {
+      await s3.deleteObjects({
+        Bucket: R2_BUCKET_NAME,
+        Delete: {
+          Objects: filesToDelete.map(key => ({ Key: key })),
+          Quiet: true
+        }
+      }).promise();
+    }
+
+    // Upload new files
+    let newUploadedKeys = [];
+    if (files.length > 0) {
+      let parsedDocTypes = [];
+      try {
+        parsedDocTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : [];
+      } catch (err) {
+        return res.status(400).json({ error: 'Invalid documentTypes format' });
+      }
+
+      const filesWithDocTypes = files.map((file, i) => ({
+        ...file,
+        documentType: parsedDocTypes[i] || 'unknown'
+      }));
+
+      const uploadedFiles = await uploadToR2(filesWithDocTypes, "project_master_edit", "system_edit");
+      newUploadedKeys = uploadedFiles.map(file => file.key); // 🔧 Extract keys only
+
+    }
+
+    const finalDocs = [...retainedFileKeys, ...newUploadedKeys];
+
+    // Update project fields
+    project.projectName = projectName;
+    project.projectOwner = projectOwner;
+    project.projectContact = projectContact;
+    project.projectAddress = projectAddress;
+    project.expectedStartDate = expectedStartDate;
+    project.expectedEndDate = expectedEndDate;
+    project.projectBrouchers = finalDocs.join(',');
+
+    await project.save();
+    res.status(200).json(project);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -140,22 +176,24 @@ exports.updateProjectsDetails = async (req, res) => {
 // ✅ Delete Project Details
 exports.deleteProjectsDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
 
-    // Find the project before deleting
     const project = await ProjectMaster.findOne({ where: { id } });
     if (!project) return res.status(404).json({ error: "Project not found" });
 
-    // Delete associated files
     const oldFiles = project.projectBrouchers
       ? project.projectBrouchers.split(',')
       : [];
 
-    oldFiles.forEach(file => {
-      const filePath = path.join(__dirname, "../../uploads", file);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    });
+    if (oldFiles.length > 0) {
+      await s3.deleteObjects({
+        Bucket: R2_BUCKET_NAME,
+        Delete: {
+          Objects: oldFiles.map(key => ({ Key: key })),
+          Quiet: true
+        }
+      }).promise();
+    }
 
     await ProjectMaster.destroy({ where: { id } });
     res.json({ message: "Project deleted successfully" });

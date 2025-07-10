@@ -3,36 +3,27 @@ const inventoryEntry = require('../../models/transactionModels/inventoryEntryMod
 const unitType = require("../../models/updateModels/unitTypeSchema");
 const vendor = require('../../models/updateModels/vendorMasterSchema');
 const materialMaster = require('../../models/updateModels/materialMasterSchema');
-
 const { ValidationError } = require('sequelize');
-
-const fs = require("fs");
-
-const multer = require("multer");
-const path = require("path");
 const { v4: uuidv4 } = require('uuid');
+const multer = require("multer");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, "../../uploads");
+const s3 = require('../../config/r2config');
+const { uploadToR2 } = require('../../uploads/r2Uploader');
 
-    // Check if directory exists, if not create it
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true }); // ✅ Create parent directories too
-    }
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
+const R2_ENDPOINT = process.env.R2_ENDPOINT;
 
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-     const ext = path.extname(file.originalname);
-     const uniqueName = `${file.fieldname}-${uuidv4()}${ext}`; // ✅ use uuid
-     cb(null, uniqueName);
-   },
-});
+const PUBLIC_R2_BASE_URL = process.env.PUBLIC_R2_BASE_URL;
 
+// ✅ Correct URL builder
+const getR2FileUrl = (key) => `${PUBLIC_R2_BASE_URL}/${key}`;
+
+// ✅ Multer memory storage for direct upload to R2
+const storage = multer.memoryStorage();
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB limit
 
 // ✅ Create Inventory Entry
-const  createInventoryEntry = async (req, res) => {
+const createInventoryEntry = async (req, res) => {
   try {
     const {
       material_id,
@@ -44,13 +35,29 @@ const  createInventoryEntry = async (req, res) => {
       unit_type,
       quantity_received,
       entered_by,
+      documentTypes
     } = req.body;
 
-    const userId = req.userId;
+     const files = req.files || [];
 
-    const files = req.files || [];
-    const invoiceAttachments = files.map(file => file.filename); // Store only filenames
-console.log("Uploaded files:", req.files);
+    let parsedDocTypes = [];
+    try {
+      parsedDocTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : [];
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid documentTypes format' });
+    }
+
+    const filesWithDocTypes = files.map((file, i) => ({
+      ...file,
+      documentType: parsedDocTypes[i] || 'unknown'
+    }));
+
+   
+    const uploadedFiles = await uploadToR2(filesWithDocTypes, "inventory_docs", "invoice_upload");
+   
+
+    const uploadedKeys = uploadedFiles.map(file => file.key);
+    const invoiceAttachments = uploadedKeys.join(',');
 
     const newEntry = await inventoryEntry.create({
       material_id,
@@ -61,13 +68,13 @@ console.log("Uploaded files:", req.files);
       invoice_cost_incl_gst,
       unit_type,
       quantity_received,
-      invoice_attachment: invoiceAttachments.join(','), // Save as comma-separated string
-      entered_by,
-    
+      invoice_attachment: invoiceAttachments,
+      entered_by
     });
 
-    res.status(201).json({ success: true, data: newEntry });
-  } catch (error) {
+    res.status(201).json({ ...newEntry.toJSON(),
+      documentUrls: uploadedFiles.map(f => f.url)});
+  } catch (err) {
     if (err instanceof ValidationError) {
       const messages = err.errors.map((e) => e.message);
       return res.status(400).json({ error: messages.join(', ') });
@@ -76,15 +83,14 @@ console.log("Uploaded files:", req.files);
   }
 };
 
-// ✅ Get Inventory Details (Filtered)
-const  getInventaryDetails = async (req, res) => {
+// ✅ Get Inventory List
+const getInventoryDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const skip = parseInt(req.query.skip) || 0;
     const limit = parseInt(req.query.limit) || 10;
 
     const conditions = [];
-     const parseArray = (value) => value ? value.split(',') : [];
+    const parseArray = (value) => value ? value.split(',') : [];
 
     if (req.query.material_id) {
       conditions.push({ material_id: { [Op.in]: parseArray(req.query.material_id) } });
@@ -102,66 +108,54 @@ const  getInventaryDetails = async (req, res) => {
       conditions.push({ vendor_name: req.query.vendorName });
     }
 
-   
     let whereClause = {};
     if (conditions.length > 0) {
-      whereClause = {
-        [Op.and]: [{ [Op.or]: conditions }]
-      };
+      whereClause = { [Op.and]: [{ [Op.or]: conditions }] };
     }
 
-
-    const inventoryDetails = await inventoryEntry.findAll({
-      where: whereClause, offset: skip, limit
-    });
-
-    const updatedProperties = inventoryDetails.map(property => ({
-      ...property.toJSON(),
-      invoice_attachment: property.invoice_attachment
-        ? property.invoice_attachment.split(",").map(img => `http://localhost:2026/uploads/${img}`): []
-    }));
-
+    const inventoryDetails = await inventoryEntry.findAll({ where: whereClause, offset: skip, limit });
     const inventoryDetailsCount = await inventoryEntry.count({ where: whereClause });
+
+    const updatedProperties = inventoryDetails.map(entry => ({
+      ...entry.toJSON(),
+      invoice_attachment: entry.invoice_attachment
+        ? entry.invoice_attachment.split(',').map(getR2FileUrl)
+        : []
+    }));
 
     return res.status(200).json({ updatedProperties, inventoryDetails, inventoryDetailsCount });
   } catch (err) {
-    console.error("Error fetching inventory details:", err);
-    return res.status(500).json({ error: "Failed to fetch inventory details. Please try again later." });
+    return res.status(500).json({ error: "Failed to fetch inventory details." });
   }
 };
 
-// ✅ Get Inventory by ID
-const  getInventoryById = async (req, res) => {
+// ✅ Get Inventory By ID
+const getInventoryById = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
+    const entry = await inventoryEntry.findOne({ where: { id } });
 
-    const inventory = await inventoryEntry.findOne({ where: { id } });
-
-    if (!inventory) {
-      return res.status(404).json({ error: "Material not found or unauthorized access." });
+    if (!entry) {
+      return res.status(404).json({ error: "Inventory not found." });
     }
 
-    const updatedProperty = {
-      ...inventory.toJSON(),
-      invoice_attachment: inventory.invoice_attachment
-        ? inventory.invoice_attachment.split(",").map(img => `http://localhost:2026/uploads/${img}`)
+    const updated = {
+      ...entry.toJSON(),
+      invoice_attachment: entry.invoice_attachment
+        ? entry.invoice_attachment.split(',').map(getR2FileUrl)
         : []
     };
 
-    res.status(200).json({ success: true, data: updatedProperty });
+    return res.status(200).json({ success: true, data: updated });
   } catch (err) {
-    console.error("Error fetching inventory by ID:", err);
     return res.status(500).json({ error: err.message });
   }
 };
 
-
-const  updateInventory = async (req, res) => {
+// ✅ Update Inventory
+const updateInventory = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
-
     const {
       material_id,
       material_name,
@@ -171,35 +165,47 @@ const  updateInventory = async (req, res) => {
       invoice_cost_incl_gst,
       unit_type,
       quantity_received,
-      entered_by
+      entered_by,
+       documentTypes,
+      retainedFiles // comma-separated stringified keys
     } = req.body;
 
     const inventory = await inventoryEntry.findOne({ where: { id } });
+    if (!inventory) return res.status(404).json({ error: "Inventory not found" });
 
-    if (!inventory) {
-      return res.status(404).json({ error: "Inventory not found or unauthorized access." });
+    let retainedKeys = [];
+    try {
+      retainedKeys = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : [];
+    } catch {
+      return res.status(400).json({ error: 'Invalid retainedFiles format' });
     }
 
-    // ✅ Handle invoice file attachment
+    const oldKeys = inventory.invoice_attachment ? inventory.invoice_attachment.split(',') : [];
+    const keysToDelete = oldKeys.filter(key => !retainedKeys.includes(key));
+
+    if (keysToDelete.length > 0) {
+      await s3.deleteObjects({
+        Bucket: R2_BUCKET_NAME,
+        Delete: { Objects: keysToDelete.map(k => ({ Key: k })), Quiet: true }
+      }).promise();
+    }
+
     const files = req.files || [];
-    let invoiceAttachments;
+    let newKeys = [];
 
     if (files.length > 0) {
-      // Delete old attachments (optional cleanup)
-      const oldFiles = inventory.invoice_attachment ? inventory.invoice_attachment.split(',') : [];
-      oldFiles.forEach((file) => {
-        const filePath = path.join(__dirname, "../../uploads", file);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      });
+  const filesWithDocTypes = files.map(file => ({
+    ...file,
+    documentType: 'invoice'
+  }));
 
-      // Save new uploaded files
-      invoiceAttachments = files.map(file => file.filename).join(",");
-    } else {
-      // If no new file, keep the old filenames
-      invoiceAttachments = inventory.invoice_attachment;
-    }
+  const uploaded = await uploadToR2(filesWithDocTypes, "inventory_docs_edit", "invoice_edit");
+  newKeys = uploaded.map(file => file.key); // ✅ Extract keys only
+}
 
-    // ✅ Update the record
+
+    const finalAttachments = [...retainedKeys, ...newKeys];
+
     await inventory.update({
       material_id,
       material_name,
@@ -209,50 +215,48 @@ const  updateInventory = async (req, res) => {
       invoice_cost_incl_gst,
       unit_type,
       quantity_received,
-      invoice_attachment: invoiceAttachments,
+      invoice_attachment: finalAttachments.join(','),
       entered_by
     });
 
-    return res.status(200).json({ message: "Material updated successfully.", inventory });
+    
+return res.status(200).json({
+  message: "Inventory updated successfully.",
+  inventory: {
+    ...inventory.toJSON(),
+    invoice_attachment: finalAttachments.map(getR2FileUrl)
+  }
+});
   } catch (err) {
-    console.error("Error updating inventory:", err);
-
-    if (err.name === "SequelizeUniqueConstraintError") {
-      return res.status(400).json({
-        error: `Invoice number '${req.body.invoice_number}' already exists.`
-      });
-    }
-
     return res.status(500).json({ error: err.message });
   }
 };
 
 // ✅ Delete Inventory
-const  deleteInventory = async (req, res) => {
+const deleteInventory = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
+    const inventory = await inventoryEntry.findOne({ where: { id } });
 
-    const deleted = await inventoryEntry.destroy({ where: { id } });
+    if (!inventory) return res.status(404).json({ error: "Inventory not found" });
 
-    if (!deleted) {
-      return res.status(404).json({ error: "Inventory not found or unauthorized access." });
+    const keys = inventory.invoice_attachment ? inventory.invoice_attachment.split(',') : [];
+    if (keys.length > 0) {
+      await s3.deleteObjects({
+        Bucket: R2_BUCKET_NAME,
+        Delete: { Objects: keys.map(k => ({ Key: k })), Quiet: true }
+      }).promise();
     }
 
-    return res.status(200).json({ message: "Inventory deleted successfully." });
+    await inventoryEntry.destroy({ where: { id } });
+    return res.json({ message: "Inventory deleted successfully" });
   } catch (err) {
-    console.error("Error deleting inventory:", err);
     return res.status(500).json({ error: err.message });
   }
 };
 
-// ✅ Get Material Master (User-Specific)
-const  getMaterialMasterDetails = async (req, res) => {
-  const userId = req.userId;
-  // if (!userId) {
-  //   return res.status(400).json({ error: "User ID not found" });
-  // }
-
+// ✅ Master APIs
+const getMaterialMasterDetails = async (_, res) => {
   try {
     const materialDetails = await materialMaster.findAll();
     res.json(materialDetails);
@@ -261,13 +265,7 @@ const  getMaterialMasterDetails = async (req, res) => {
   }
 };
 
-// ✅ Get Unit Type (User-Specific)
-const  getUnitTypeDetails = async (req, res) => {
-  const userId = req.userId;
-  // if (!userId) {
-  //   return res.status(400).json({ error: "User ID not found" });
-  // }
-
+const getUnitTypeDetails = async (_, res) => {
   try {
     const unitTypeDetails = await unitType.findAll();
     res.json(unitTypeDetails);
@@ -276,13 +274,7 @@ const  getUnitTypeDetails = async (req, res) => {
   }
 };
 
-// ✅ Get Vendor Details (User-Specific)
-const  getVendorDetails = async (req, res) => {
-  const userId = req.userId;
-  // if (!userId) {
-  //   return res.status(400).json({ error: "User ID not found" });
-  // }
-
+const getVendorDetails = async (_, res) => {
   try {
     const vendorDetails = await vendor.findAll();
     res.json(vendorDetails);
@@ -290,21 +282,15 @@ const  getVendorDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-// Add this at the bottom of inventoryEntry controller file
-
-const multerInstance = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-});
 
 module.exports = {
   createInventoryEntry,
-  getInventaryDetails,
-  getMaterialMasterDetails,
-  getUnitTypeDetails,
-  getVendorDetails,
+  getInventoryDetails,
   getInventoryById,
   updateInventory,
   deleteInventory,
-  upload: multerInstance // ✅ Export the correctly configured multer
+  getMaterialMasterDetails,
+  getUnitTypeDetails,
+  getVendorDetails,
+  upload
 };

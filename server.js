@@ -7,7 +7,6 @@ const fs = require('fs');
 
 //  update masters
 const blocksRoutes = require('./routes/updateRoutes/blockRoutes');
-const builderRoutes = require('./routes/updateRoutes/builderRoutes');
 const bankRoutes = require('./routes/updateRoutes/bankRoutes');
 const customerRoutes = require("./routes/updateRoutes/customerRoutes");
 const departmentRoutes = require("./routes/updateRoutes/departmentRoutes");
@@ -49,7 +48,6 @@ const { materialMaster } = require('./models/updateModels/materialMasterSchema')
 const { customerMaster } = require('./models/updateModels/customerMasterSchema');
 const { userMaster } = require('./models/updateModels/userMasterSchema');
 const { rolesMaster } = require('./models/updateModels/rolesMasterSchema');
-const { builderMaster } = require('./models/updateModels/builderMasterSchema');
 const { projectMaster } = require('./models/updateModels/projectMasterSchema');
 const { blocksMaster } = require('./models/updateModels/blocksMasterSchema');
 const { paymentModeMaster } = require('./models/updateModels/paymentModeMasterSchema');
@@ -101,7 +99,6 @@ sqlDb()
 
     // masters
     app.use('/api/blocks', blocksRoutes);
-    app.use('/api/builders',builderRoutes, );
     app.use('/api/banks',bankRoutes);
     app.use('/api/customers',customerRoutes);
     app.use('/api/departments', departmentRoutes);

@@ -7,9 +7,13 @@ const expenditure = require('../../controllers/transactionControllers/expenditur
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" }); // or use diskStorage
 
+
 router.post(
   '/',
-  expenditure.uploadFields,
+  upload.fields([
+    { name: 'payment_reference_files', maxCount: 5 },
+    { name: 'payment_evidence_files', maxCount: 5 }
+  ]),
   verifyToken,
   expenditure.createExpenditure
 );
@@ -37,7 +41,15 @@ router.get('/paymentBank', verifyToken, expenditure.getPaymentBankDetails);
 // Get expenditure details with filtering and pagination
 router.get('/:id', verifyToken, expenditure.getExpenditureById);
 
-router.put('/:id', verifyToken, expenditure.uploadFields, expenditure.updateExpenditure);
+router.put(
+  '/:id',
+  upload.fields([
+    { name: 'payment_reference_files', maxCount: 5 },
+    { name: 'payment_evidence_files', maxCount: 5 }
+  ]),
+  verifyToken,
+  expenditure.updateExpenditure
+);
 
 // Delete Expenditure (by ID)
 router.delete('/:id', verifyToken, expenditure.deleteExpenditure);

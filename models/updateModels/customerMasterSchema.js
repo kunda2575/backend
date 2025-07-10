@@ -11,14 +11,7 @@ const CustomerMaster = sequelize.define(
     },
     customerName: {
       type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: { msg: 'Customer name is required' },
-        len: {
-          args: [2, 100],
-          msg: 'Customer name must be between 2 and 100 characters'
-        }
-      }
+      allowNull: false
     },
     customerPhone: {
       type: DataTypes.STRING,
@@ -64,7 +57,7 @@ const CustomerMaster = sequelize.define(
         notEmpty: { msg: 'Languages known is required' }
       }
     },
-    projectNameBlock: {
+    blockNo: {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
@@ -79,11 +72,8 @@ const CustomerMaster = sequelize.define(
       }
     },
     documents: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: { msg: 'Documents are required' }
-      }
+      type: DataTypes.TEXT, // Stores JSON string of uploaded files
+      allowNull: true // Allow empty or missing initially
     }
   },
   {

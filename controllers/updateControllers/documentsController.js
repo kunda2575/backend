@@ -1,44 +1,48 @@
 const DocumentsMaster = require('../../models/updateModels/documentsUploadSchema');
-const { Op } = require("sequelize");
-const fs = require("fs");
-const multer = require("multer");
-const path = require("path");
-const { v4: uuidv4 } = require("uuid");
+const { uploadToR2 } = require('../../uploads/r2Uploader');
+const s3 = require('../../config/r2config');
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
+const R2_ENDPOINT = process.env.R2_ENDPOINT;
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+exports.upload = upload;
 
-// 🔐 Multer storage config with UUID
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, "../../uploads");
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-     const ext = path.extname(file.originalname);
-     const uniqueName = `${file.fieldname}-${uuidv4()}${ext}`; // ✅ use uuid
-     cb(null, uniqueName);
-   },
-});
+// Other required imports...
 
-exports.upload = multer({ storage });
+const PUBLIC_R2_BASE_URL = process.env.PUBLIC_R2_BASE_URL;
+
+// ✅ Correct URL builder
+const getR2FileUrl = (key) => `${PUBLIC_R2_BASE_URL}/${key}`;
+
 
 // ✅ Create
 exports.createDocumentsDetails = async (req, res) => {
   try {
-    const userId = req.userId;
+    const { documentTypes } = req.body;
     const files = req.files || [];
 
-    if (files.length === 0) {
+    if (!files.length) {
       return res.status(400).json({ error: "No files uploaded" });
     }
 
-    const documentsUpload = files.map(file => file.filename).join(',');
+    let parsedDocTypes = [];
+    try {
+      parsedDocTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : [];
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid documentTypes format' });
+    }
 
-    const newDocuments = await DocumentsMaster.create({
-      documentsUpload,
-    
-    });
+    const filesWithDocTypes = files.map((file, i) => ({
+      ...file,
+      documentType: parsedDocTypes[i] || 'unknown'
+    }));
+
+    const uploadedFiles = await uploadToR2(filesWithDocTypes, "documents_master", "system_upload");
+    const uploadedKeys = uploadedFiles.map(file => file.key);
+    const documentsUpload = uploadedKeys.join(',');
+
+
+    const newDocuments = await DocumentsMaster.create({ documentsUpload });
 
     res.status(201).json(newDocuments);
   } catch (err) {
@@ -50,17 +54,16 @@ exports.createDocumentsDetails = async (req, res) => {
 // ✅ Read
 exports.getDocumentsDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const documentsDetails = await DocumentsMaster.findAll();
 
-    const updatedDetails = documentsDetails.map(doc => ({
+    const formatted = documentsDetails.map(doc => ({
       ...doc.toJSON(),
       documentsUpload: doc.documentsUpload
-        ? doc.documentsUpload.split(",")
+        ? doc.documentsUpload.split(',').map(getR2FileUrl)
         : []
     }));
 
-    res.status(200).json(updatedDetails);
+    res.status(200).json(formatted);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -69,29 +72,64 @@ exports.getDocumentsDetails = async (req, res) => {
 // ✅ Update
 exports.updateDocumentsDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
+    const { documentTypes, retainedFiles } = req.body;
 
     const documents = await DocumentsMaster.findOne({ where: { id } });
     if (!documents) {
       return res.status(404).json({ error: "Documents not found" });
     }
 
-    const files = req.files || [];
-    let documentsUpload = documents.documentsUpload;
-
-    if (files.length > 0) {
-      const oldFiles = documents.documentsUpload ? documents.documentsUpload.split(',') : [];
-      oldFiles.forEach(file => {
-        const filePath = path.join(__dirname, "../../uploads", file);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      });
-
-      documentsUpload = files.map(file => file.filename).join(',');
+    // Parse retained file keys
+    let retainedFileKeys = [];
+    try {
+      retainedFileKeys = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : [];
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid retainedFiles format' });
     }
 
-    documents.documentsUpload = documentsUpload;
-    await documents.save();
+    const oldDocs = documents.documentsUpload ? documents.documentsUpload.split(',') : [];
+    const filesToDelete = oldDocs.filter((key) => !retainedFileKeys.includes(key));
+
+    // ✅ Delete removed files from R2
+    if (filesToDelete.length > 0) {
+      await s3.deleteObjects({
+        Bucket: R2_BUCKET_NAME,
+        Delete: {
+          Objects: filesToDelete.map(key => ({ Key: key })),
+          Quiet: true
+        }
+      }).promise();
+    }
+
+    // ✅ Upload new files (if any)
+    const files = req.files || [];
+    let newUploadedKeys = [];
+
+    if (files.length > 0) {
+      let parsedDocTypes = [];
+      try {
+        parsedDocTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : [];
+      } catch (err) {
+        return res.status(400).json({ error: 'Invalid documentTypes format' });
+      }
+
+      const filesWithDocTypes = files.map((file, i) => ({
+        ...file,
+        documentType: parsedDocTypes[i] || 'unknown'
+      }));
+
+      const uploadedFiles = await uploadToR2(filesWithDocTypes, "documents_master_edit", "system_edit");
+      newUploadedKeys = uploadedFiles.map(file => file.key); // 🔧 Extract keys only
+    }
+
+
+    // 🧠 Merge retained + new
+    const finalDocs = [...retainedFileKeys, ...newUploadedKeys];
+
+    await documents.update({
+      documentsUpload: finalDocs.join(',')
+    });
 
     res.status(200).json(documents);
   } catch (err) {
@@ -102,17 +140,22 @@ exports.updateDocumentsDetails = async (req, res) => {
 // ✅ Delete
 exports.deleteDocumentsDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
 
     const documents = await DocumentsMaster.findOne({ where: { id } });
     if (!documents) return res.status(404).json({ error: "Documents not found" });
 
-    const oldFiles = documents.documentsUpload ? documents.documentsUpload.split(',') : [];
-    oldFiles.forEach(file => {
-      const filePath = path.join(__dirname, "../../uploads", file);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    });
+    const oldKeys = documents.documentsUpload ? documents.documentsUpload.split(',') : [];
+
+    if (oldKeys.length > 0) {
+      await s3.deleteObjects({
+        Bucket: R2_BUCKET_NAME,
+        Delete: {
+          Objects: oldKeys.map((key) => ({ Key: key })),
+          Quiet: true
+        }
+      }).promise();
+    }
 
     await DocumentsMaster.destroy({ where: { id } });
     res.json({ message: "Documents deleted successfully" });

@@ -1,34 +1,24 @@
 const { ValidationError } = require('sequelize');
 const EmployeeMaster = require('../../models/updateModels/employeeMasterSchema');
 const { Op } = require("sequelize");
-const fs = require("fs");
 const multer = require("multer");
-const path = require("path");
 const { v4: uuidv4 } = require('uuid');
+const { uploadToR2 } = require('../../uploads/r2Uploader');
+const s3 = require('../../config/r2config');
 
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
+const R2_ENDPOINT = process.env.R2_ENDPOINT;
 
-// 🔐 Multer storage config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, "../../uploads");
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const uniqueName = `${file.fieldname}-${uuidv4()}${ext}`; // ✅ use uuid
-    cb(null, uniqueName);
-  },
-});
+const PUBLIC_R2_BASE_URL = process.env.PUBLIC_R2_BASE_URL;
 
-exports.upload = multer({ storage });
+// ✅ Correct URL builder
+const getR2FileUrl = (key) => `${PUBLIC_R2_BASE_URL}/${key}`;
 
-// ✅ Create
+// ✅ Multer with memory storage for direct buffer access
+const storage = multer({ storage: multer.memoryStorage() });
+exports.upload = storage;
 exports.createEmployeeDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const {
       employeeID,
       employeeName,
@@ -37,11 +27,15 @@ exports.createEmployeeDetails = async (req, res) => {
       idType,
       employeeSalary,
       department,
-      emp_address
+      emp_address,
+      documentTypes
     } = req.body;
 
     const files = req.files || [];
-    const idProof1 = files.map(file => file.filename).join(',');
+
+    if (!files.length) {
+      return res.status(400).json({ error: "No files uploaded" });
+    }
 
     const existing = await EmployeeMaster.findOne({
       where: {
@@ -49,14 +43,31 @@ exports.createEmployeeDetails = async (req, res) => {
           { employeeID },
           { employeeEmail },
           { employeePhone }
-        ],
-        
+        ]
       }
     });
 
     if (existing) {
       return res.status(400).json({ error: 'Duplicate Employee ID, Email, or Phone' });
     }
+
+    let parsedDocTypes = [];
+    try {
+      parsedDocTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : [];
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid documentTypes format' });
+    }
+
+    const filesWithDocTypes = files.map((file, i) => ({
+      ...file,
+      documentType: parsedDocTypes[i] || 'unknown'
+    }));
+
+    const uploadedFiles = await uploadToR2(filesWithDocTypes, "employee_master", "employee_upload");
+  // const uploadedFiles = await uploadToR2(filesWithDocTypes, "documents_master", "system_upload");
+    const uploadedKeys = uploadedFiles.map(file => file.key);
+   
+    const idProof1 = uploadedKeys.join(',');
 
     const newEmployee = await EmployeeMaster.create({
       employeeID,
@@ -67,32 +78,30 @@ exports.createEmployeeDetails = async (req, res) => {
       idProof1,
       employeeSalary,
       department,
-      emp_address,
-      
+      emp_address
     });
 
     res.status(201).json(newEmployee);
   } catch (err) {
-     if (err instanceof ValidationError) {
+    if (err instanceof ValidationError) {
       const messages = err.errors.map((e) => e.message);
       return res.status(400).json({ error: messages.join(', ') });
     }
-   
+    res.status(500).json({ error: err.message });
   }
 };
+
 
 // ✅ Read
 exports.getEmployeeDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const employeeDetails = await EmployeeMaster.findAll();
 
     const updatedDetails = employeeDetails.map(emp => ({
       ...emp.toJSON(),
       idProofs1: emp.idProof1
-         ? emp.idProof1.split(",").map(img => `http://localhost:2026/uploads/${img}`)
+        ? emp.idProof1.split(",").map(getR2FileUrl)
         : []
-
     }));
 
     res.status(200).json(updatedDetails);
@@ -101,53 +110,75 @@ exports.getEmployeeDetails = async (req, res) => {
   }
 };
 
-// ✅ Update
 exports.updateEmployeesDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
     const {
       employeeName,
       employeePhone,
       employeeEmail,
-      address,
       idType,
       employeeSalary,
       department,
-      emp_address
+      emp_address,
+      documentTypes,
+      retainedFiles
     } = req.body;
 
     const employee = await EmployeeMaster.findOne({ where: { id } });
+    if (!employee) return res.status(404).json({ error: "Employee not found" });
 
-    if (!employee) {
-      return res.status(404).json({ error: "Employee not found" });
+    let retainedKeys = [];
+    try {
+      retainedKeys = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : [];
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid retainedFiles format' });
+    }
+
+    const oldKeys = employee.idProof1 ? employee.idProof1.split(',') : [];
+    const keysToDelete = oldKeys.filter(k => !retainedKeys.includes(k));
+
+    if (keysToDelete.length > 0) {
+      await s3.deleteObjects({
+        Bucket: R2_BUCKET_NAME,
+        Delete: {
+          Objects: keysToDelete.map(k => ({ Key: k })),
+          Quiet: true
+        }
+      }).promise();
     }
 
     const files = req.files || [];
-    let idProof1;
+    let newUploadedKeys = [];
 
     if (files.length > 0) {
-      // Delete old files
-      const oldFiles = employee.idProof1 ? employee.idProof1.split(',') : [];
-      oldFiles.forEach(file => {
-        const filePath = path.join(__dirname, "../../uploads", file);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      });
+      let parsedDocTypes = [];
+      try {
+        parsedDocTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : [];
+      } catch (err) {
+        return res.status(400).json({ error: 'Invalid documentTypes format' });
+      }
 
-      idProof1 = files.map(file => file.filename).join(',');
-    } else {
-      idProof1 = employee.idProof1; // Keep old
+      const filesWithDocTypes = files.map((file, i) => ({
+        ...file,
+        documentType: parsedDocTypes[i] || 'unknown'
+      }));
+
+        const uploadedFiles = await uploadToR2(filesWithDocTypes, "employee_master_edit", "employee_edit");
+    
+      newUploadedKeys = uploadedFiles.map(file => file.key); // 🔧 Extract keys only
     }
+
+    const finalKeys = [...retainedKeys, ...newUploadedKeys];
 
     employee.employeeName = employeeName;
     employee.employeePhone = employeePhone;
     employee.employeeEmail = employeeEmail;
-    employee.address = address;
     employee.idType = idType;
-    employee.idProof1 = idProof1;
     employee.employeeSalary = employeeSalary;
     employee.department = department;
     employee.emp_address = emp_address;
+    employee.idProof1 = finalKeys.join(',');
 
     await employee.save();
     res.status(200).json(employee);
@@ -159,20 +190,23 @@ exports.updateEmployeesDetails = async (req, res) => {
 // ✅ Delete
 exports.deleteEmployeesDetails = async (req, res) => {
   try {
-    const userId = req.userId;
     const { id } = req.params;
-
     const employee = await EmployeeMaster.findOne({ where: { id } });
+
     if (!employee) return res.status(404).json({ error: "Employee not found" });
 
-    // Delete associated files
-    const oldFiles = employee.idProof1 ? employee.idProof1.split(',') : [];
-    oldFiles.forEach(file => {
-      const filePath = path.join(__dirname, "../../uploads", file);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    });
+    const keys = employee.idProof1 ? employee.idProof1.split(',') : [];
+    if (keys.length > 0) {
+      await s3.deleteObjects({
+        Bucket: R2_BUCKET_NAME,
+        Delete: {
+          Objects: keys.map(k => ({ Key: k })),
+          Quiet: true
+        }
+      }).promise();
+    }
 
-    await EmployeeMaster.destroy({ where: { id} });
+    await EmployeeMaster.destroy({ where: { id } });
     res.json({ message: "Employee deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });

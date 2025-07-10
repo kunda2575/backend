@@ -6,6 +6,10 @@ const verifyToken = require('../../middleware/verfiyToken')
 
 
 router.post('/',verifyToken, leadController.createLeadsDetails);
+
+
+router.post('/leads/import', leadController.importLeadsFromExcel); // ✅ new route
+
 router.get('/', verifyToken,leadController.getLeadDetails);
 
 router.get('/leadSource', verifyToken,leadController.getLeadSourceDetails);

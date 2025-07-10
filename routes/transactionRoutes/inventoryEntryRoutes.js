@@ -10,12 +10,10 @@ const upload = inventoryEntry.upload;
 
 
 
-router.post('/',  upload.array("invoice_attachment", 1),verifyToken, inventoryEntry.createInventoryEntry);
+router.post('/',  upload.any(),verifyToken, inventoryEntry.createInventoryEntry);
 
 
-
-// Get Inventory Details with filtering and pagination
-router.get('/', verifyToken, inventoryEntry.getInventaryDetails);
+router.get('/', verifyToken, inventoryEntry.getInventoryDetails);
 
 // For getting material master details (assuming it's a different endpoint)
 router.get('/materialMaster', verifyToken, inventoryEntry.getMaterialMasterDetails);
@@ -34,7 +32,7 @@ router.get('/:id', verifyToken, inventoryEntry.getInventoryById);
 
 
 // ✅ Update Inventory (uses correct multer config)
-router.put('/:id', upload.array("invoice_attachment", 5), verifyToken, inventoryEntry.updateInventory);
+router.put('/:id', upload.any(), verifyToken, inventoryEntry.updateInventory);
 
 // ✅ Delete Inventory (by ID)
 router.delete('/:id', verifyToken, inventoryEntry.deleteInventory);

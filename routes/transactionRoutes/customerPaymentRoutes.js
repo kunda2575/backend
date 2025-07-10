@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../../middleware/verfiyToken');
+const multer = require('multer');
+
+const upload = multer(); // stores files in memory
 
 // Import controller functions
 const customerPayment = require('../../controllers/transactionControllers/customerPayments');
 
 // Create customerPayment
-router.post('/', verifyToken,customerPayment.uploadFields, customerPayment.createcustomerPayments);
+router.post('/', verifyToken,upload.any(), customerPayment.createcustomerPayments);
 
 // Get customerPayment master details
 router.get('/', verifyToken, customerPayment.getcustomerPaymentsDetails);
@@ -38,7 +41,7 @@ router.get('/:id', verifyToken, customerPayment.getcustomerPaymentsById);
 
 
 // Update Expenditure (by ID)
-router.put('/:id', verifyToken, customerPayment.uploadFields,customerPayment.updatecustomerPayments);
+router.put('/:id', verifyToken, upload.any(),customerPayment.updatecustomerPayments);
 
 // Delete Expenditure (by ID)
 router.delete('/:id', verifyToken, customerPayment.deletecustomerPayments);

@@ -65,7 +65,14 @@ const userMaster = sequelize.define(
         notEmpty: { msg: 'Email is required' },
         isEmail: { msg: 'Must be a valid email address' }
       }
-    }
+    },
+    projectName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+            notEmpty: { msg: "Project name is required" }
+        }
+    },
   },
   {
     tableName: 'user_masters',

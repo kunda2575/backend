@@ -225,3 +225,31 @@ exports.getTeamMemberDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+// ✅ Import multiple leads from Excel
+exports.importLeadsFromExcel = async (req, res) => {
+  try {
+    const leadsArray = req.body.leads;
+
+    if (!Array.isArray(leadsArray) || leadsArray.length === 0) {
+      return res.status(400).json({ error: "No leads provided." });
+    }
+
+    const createdLeads = await Leads.bulkCreate(leadsArray, {
+      validate: true,
+      individualHooks: true
+    });
+
+    return res.status(201).json({
+      message: "Leads imported successfully.",
+      count: createdLeads.length
+    });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+
+    console.error("Bulk import error:", err);
+    return res.status(500).json({ error: "Internal server error during import." });
+  }
+};
