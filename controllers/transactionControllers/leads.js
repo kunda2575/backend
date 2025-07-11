@@ -225,7 +225,7 @@ exports.getTeamMemberDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-// ✅ Import multiple leads from Excel
+
 exports.importLeadsFromExcel = async (req, res) => {
   try {
     const leadsArray = req.body.leads;
@@ -234,7 +234,36 @@ exports.importLeadsFromExcel = async (req, res) => {
       return res.status(400).json({ error: "No leads provided." });
     }
 
-    const createdLeads = await Leads.bulkCreate(leadsArray, {
+    const requiredFields = ["contact_name", "contact_email"];
+    const cleanedLeads = [];
+    const errors = [];
+
+    leadsArray.forEach((record, index) => {
+      let recordErrors = [];
+
+      requiredFields.forEach(field => {
+        if (record[field]) {
+          record[field] = record[field].trim();
+        } else {
+          recordErrors.push({ field, error: `${field} is empty`, row: index + 1 });
+        }
+      });
+
+      if (recordErrors.length > 0) {
+        errors.push(...recordErrors);
+      } else {
+        cleanedLeads.push(record);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Faulty data found in input.",
+        errors
+      });
+    }
+
+    const createdLeads = await Leads.bulkCreate(cleanedLeads, {
       validate: true,
       individualHooks: true
     });
@@ -243,6 +272,7 @@ exports.importLeadsFromExcel = async (req, res) => {
       message: "Leads imported successfully.",
       count: createdLeads.length
     });
+
   } catch (err) {
     if (err instanceof ValidationError) {
       const messages = err.errors.map((e) => e.message);
