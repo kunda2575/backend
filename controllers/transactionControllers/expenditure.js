@@ -223,6 +223,111 @@ const deleteExpenditure = async (req, res) => {
   }
 };
 
+
+
+const importExpenditureFromExcel = async (req, res) => {
+  try {
+    const expenditures = req.body.expenditures;
+
+    if (!Array.isArray(expenditures) || expenditures.length === 0) {
+      return res.status(400).json({ error: "No expenditure records provided." });
+    }
+
+    const requiredFields = [
+      "date",
+      "vendor_name",
+      "expense_head",
+      "amount_inr",
+      "invoice_number",
+      "payment_mode",
+      "payment_bank",
+      "payment_reference"
+    ];
+
+    const errors = [];
+    const cleanedExpenditures = [];
+
+    expenditures.forEach((record, index) => {
+      const rowErrors = [];
+
+      // ✅ Required field check
+      requiredFields.forEach((field) => {
+        if (
+          record[field] === undefined ||
+          record[field] === null ||
+          String(record[field]).trim() === ""
+        ) {
+          rowErrors.push({
+            row: index + 1,
+            field,
+            error: `${field} is required`
+          });
+        }
+      });
+
+      // ✅ Validate and format date
+      let parsedDate = null;
+      if (record.date) {
+        if (typeof record.date === "number") {
+          const baseDate = new Date(1899, 11, 30);
+          parsedDate = new Date(baseDate.getTime() + record.date * 86400000);
+        } else {
+          const dateMoment = moment(record.date, ['DD-MM-YYYY', 'YYYY-MM-DD'], true);
+          if (dateMoment.isValid()) {
+            parsedDate = dateMoment.toDate();
+          }
+        }
+
+        if (!parsedDate || isNaN(parsedDate.getTime())) {
+          rowErrors.push({
+            row: index + 1,
+            field: "date",
+            error: "Invalid date format. Use DD-MM-YYYY or Excel serial number."
+          });
+        }
+      }
+
+      if (rowErrors.length === 0) {
+        cleanedExpenditures.push({
+          date: parsedDate,
+          vendor_name: String(record.vendor_name).trim(),
+          expense_head: String(record.expense_head).trim(),
+          amount_inr: Number(record.amount_inr),
+          invoice_number: String(record.invoice_number).trim(),
+          payment_mode: String(record.payment_mode).trim(),
+          payment_bank: String(record.payment_bank).trim(),
+          payment_reference: String(record.payment_reference).trim(),
+          payment_evidence: record.payment_evidence ? String(record.payment_evidence).trim() : null
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded Excel data.",
+        errors
+      });
+    }
+
+    const created = await expenditureModel.bulkCreate(cleanedExpenditures, {
+      validate: true,
+      individualHooks: true
+    });
+
+    return res.status(201).json({
+      message: "Expenditures imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    console.error("Expenditure Import Error:", err);
+    return res.status(500).json({ error: "Internal server error during expenditure import." });
+  }
+};
+
+
 // ✅ Master data APIs
 const getVendorDetails = async (req, res) => {
   try {
@@ -276,4 +381,5 @@ module.exports = {
   getExpenseDetails,
   getPaymentModeDetails,
   getPaymentBankDetails,
+  importExpenditureFromExcel
 };

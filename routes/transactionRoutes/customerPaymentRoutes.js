@@ -10,6 +10,7 @@ const customerPayment = require('../../controllers/transactionControllers/custom
 
 // Create customerPayment
 router.post('/', verifyToken,upload.any(), customerPayment.createcustomerPayments);
+router.post('/import', verifyToken,upload.any(), customerPayment.importCustomerFromExcel);
 
 // Get customerPayment master details
 router.get('/', verifyToken, customerPayment.getcustomerPaymentsDetails);

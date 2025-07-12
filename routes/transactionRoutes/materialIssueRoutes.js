@@ -7,6 +7,7 @@ const materialIssue  = require('../../controllers/transactionControllers/materia
 
 // Create Material
 router.post('/', verifyToken, materialIssue.createMaterialIssue);
+router.post('/import', verifyToken, materialIssue.importMaterialIssuesFromExcel);
 
 // Get Material Details with filtering and pagination
 router.get('/', verifyToken, materialIssue.getMaterialIssuesDetails);

@@ -18,6 +18,16 @@ router.post(
   expenditure.createExpenditure
 );
 
+router.post(
+  '/import',
+  upload.fields([
+    { name: 'payment_reference_files', maxCount: 5 },
+    { name: 'payment_evidence_files', maxCount: 5 }
+  ]),
+  verifyToken,
+  expenditure.importExpenditureFromExcel
+);
+
 // Get expenditure master details
 router.get('/', verifyToken, expenditure.getExpenditureDetails);
 

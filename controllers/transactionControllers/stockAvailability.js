@@ -180,3 +180,66 @@ exports.getUnitTypeDetails = async (req, res) => {
   }
 };
 
+exports.importStockAvailabilityFromExcel = async (req, res) => {
+  try {
+    const stockAvailabilityArray = req.body.stockAvailability;
+
+    if (!Array.isArray(stockAvailabilityArray) || stockAvailabilityArray.length === 0) {
+      return res.status(400).json({ error: "No stock availability records provided." });
+    }
+
+    const requiredFields = ["material_id", "material_name", "unit_type", "available_stock"];
+    const errors = [];
+    const cleanedStock = [];
+
+    stockAvailabilityArray.forEach((record, index) => {
+      const rowErrors = [];
+
+      // Validate required fields
+      requiredFields.forEach((field) => {
+        const value = record[field];
+        if (value === undefined || value === null || String(value).trim() === '') {
+          rowErrors.push({
+            field,
+            error: `${field} is required`,
+            row: index + 1
+          });
+        }
+      });
+
+      if (rowErrors.length > 0) {
+        errors.push(...rowErrors);
+      } else {
+        cleanedStock.push({
+          material_id: String(record.material_id).trim(),
+          material_name: String(record.material_name).trim(),
+          unit_type: String(record.unit_type).trim(),
+          available_stock: Number(record.available_stock),
+        });
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded Excel data.",
+        errors
+      });
+    }
+
+    // Bulk insert into database
+    const created = await Material.bulkCreate(cleanedStock, {
+      validate: true,
+      individualHooks: true
+    });
+
+    return res.status(201).json({
+      message: "Stock availability records imported successfully.",
+      count: created.length
+    });
+  } catch (err) {
+    console.error("Import Error:", err);
+    return res.status(500).json({
+      error: "Internal server error during import."
+    });
+  }
+};

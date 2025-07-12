@@ -11,6 +11,7 @@ const upload = inventoryEntry.upload;
 
 
 router.post('/',  upload.any(),verifyToken, inventoryEntry.createInventoryEntry);
+router.post('/import',  upload.any(),verifyToken, inventoryEntry.importInventoryFromExcel);
 
 
 router.get('/', verifyToken, inventoryEntry.getInventoryDetails);

@@ -1,3 +1,4 @@
+const moment = require('moment');
 const { Op } = require('sequelize');
 
 const Leads = require("../../models/transactionModels/leadsModel");
@@ -226,6 +227,16 @@ exports.getTeamMemberDetails = async (req, res) => {
   }
 };
 
+
+
+
+function excelDateToJSDate(serial) {
+  // Excel's base date is 1899-12-30
+  const excelEpoch = new Date(1899, 11, 30);
+  const jsDate = new Date(excelEpoch.getTime() + serial * 86400000);
+  return jsDate;
+}
+
 exports.importLeadsFromExcel = async (req, res) => {
   try {
     const leadsArray = req.body.leads;
@@ -235,17 +246,63 @@ exports.importLeadsFromExcel = async (req, res) => {
     }
 
     const requiredFields = ["contact_name", "contact_email"];
+    const dateFields = [
+      "creation_date",
+      "expected_date",
+      "last_interacted_on",
+      "next_interacted_date"
+    ];
+
     const cleanedLeads = [];
     const errors = [];
 
     leadsArray.forEach((record, index) => {
       let recordErrors = [];
 
+      // Trim required fields
       requiredFields.forEach(field => {
         if (record[field]) {
-          record[field] = record[field].trim();
+          record[field] = String(record[field]).trim();
         } else {
           recordErrors.push({ field, error: `${field} is empty`, row: index + 1 });
+        }
+      });
+
+      // Convert and validate date fields
+      dateFields.forEach(field => {
+        const value = record[field];
+
+        if (value !== undefined && value !== null) {
+          let date;
+
+          // Detect Excel serial number (numeric)
+          if (typeof value === 'number') {
+            date = excelDateToJSDate(value);
+          }
+          // Try parsing DD-MM-YYYY
+          else if (typeof value === 'string') {
+            const parsed = moment(value, 'DD-MM-YYYY', true);
+            if (parsed.isValid()) {
+              date = parsed.toDate();
+            }
+          }
+
+          if (date instanceof Date && !isNaN(date)) {
+            record[field] = date;
+          } else {
+            recordErrors.push({
+              field,
+              error: `${field} is not a valid date format or Excel serial.`,
+              value,
+              row: index + 1
+            });
+          }
+        } else {
+          recordErrors.push({
+            field,
+            error: `${field} is missing or empty.`,
+            row: index + 1
+          });
         }
       });
 
@@ -274,12 +331,13 @@ exports.importLeadsFromExcel = async (req, res) => {
     });
 
   } catch (err) {
-    if (err instanceof ValidationError) {
-      const messages = err.errors.map((e) => e.message);
+    console.error("Bulk import error:", err);
+
+    if (err.name === 'SequelizeValidationError') {
+      const messages = err.errors.map(e => e.message);
       return res.status(400).json({ error: messages.join(', ') });
     }
 
-    console.error("Bulk import error:", err);
     return res.status(500).json({ error: "Internal server error during import." });
   }
 };

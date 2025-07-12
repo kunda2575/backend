@@ -255,6 +255,67 @@ const deleteInventory = async (req, res) => {
   }
 };
 
+
+
+
+
+
+function excelDateToJSDate(serial) {
+  // Excel's base date is 1899-12-30
+  const excelEpoch = new Date(1899, 11, 30);
+  const jsDate = new Date(excelEpoch.getTime() + serial * 86400000);
+  return jsDate;
+}
+const importInventoryFromExcel = async (req, res) => {
+  try {
+    const inventoryItems = req.body.inventorys; // array of inventory records from frontend
+
+    if (!Array.isArray(inventoryItems) || inventoryItems.length === 0) {
+      return res.status(400).json({ error: "No inventory data provided." });
+    }
+
+    // Validate & parse dates & numbers, trim strings, etc.
+    const cleanedData = [];
+    const errors = [];
+
+    inventoryItems.forEach((item, index) => {
+      const err = [];
+
+      // Trim strings and required fields check
+      ['material_id', 'material_name', 'vendor_name', 'invoice_number', 'unit_type', 'entered_by'].forEach(field => {
+        if (item[field]) item[field] = item[field].toString().trim();
+        else err.push({ field, error: `${field} is missing`, row: index + 1 });
+      });
+
+      // Parse date fields (invoice_date)
+      if (item.invoice_date) {
+        const date = typeof item.invoice_date === 'number' ? excelDateToJSDate(item.invoice_date) : new Date(item.invoice_date);
+        if (isNaN(date)) err.push({ field: 'invoice_date', error: 'Invalid date', row: index + 1 });
+        else item.invoice_date = date;
+      } else err.push({ field: 'invoice_date', error: 'Missing invoice_date', row: index + 1 });
+
+      // Parse numbers
+      item.invoice_cost_incl_gst = parseFloat(item.invoice_cost_incl_gst) || 0;
+      item.quantity_received = parseFloat(item.quantity_received) || 0;
+
+      if (err.length > 0) errors.push(...err);
+      else cleanedData.push(item);
+    });
+
+    if (errors.length) return res.status(400).json({ message: "Validation errors", errors });
+
+    const createdInventory = await inventoryEntry.bulkCreate(cleanedData, { validate: true });
+
+    return res.status(201).json({ message: "Inventory imported successfully", count: createdInventory.length });
+  } catch (err) {
+    console.error("Bulk inventory import error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
+
 // ✅ Master APIs
 const getMaterialMasterDetails = async (_, res) => {
   try {
@@ -283,6 +344,11 @@ const getVendorDetails = async (_, res) => {
   }
 };
 
+
+
+
+
+
 module.exports = {
   createInventoryEntry,
   getInventoryDetails,
@@ -292,5 +358,6 @@ module.exports = {
   getMaterialMasterDetails,
   getUnitTypeDetails,
   getVendorDetails,
+  importInventoryFromExcel,
   upload
 };

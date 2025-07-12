@@ -212,6 +212,104 @@ exports.deleteProjectDebit = async (req, res) => {
     }
 };
 
+
+
+exports.importProjectDebitFromExcel = async (req, res) => {
+  try {
+    const projectDebits = req.body.projectDebits;
+
+    if (!Array.isArray(projectDebits) || projectDebits.length === 0) {
+      return res.status(400).json({ error: "No project debit records provided." });
+    }
+
+    const requiredFields = [
+      "date",
+      "payed_to",
+      "vendor_name",
+      "amount_inr",
+      "invoice_number",
+      "payment_mode",
+      "payment_bank"
+    ];
+
+    const errors = [];
+    const cleanedProjectDebits = [];
+
+    projectDebits.forEach((record, index) => {
+      const rowErrors = [];
+
+      // ✅ Check required fields
+      requiredFields.forEach((field) => {
+        const value = record[field];
+        if (value === undefined || value === null || String(value).trim() === "") {
+          rowErrors.push({
+            row: index + 1,
+            field,
+            error: `${field} is required`
+          });
+        }
+      });
+
+      // ✅ Handle date
+      let parsedDate = null;
+      if (record.date !== undefined && record.date !== null) {
+        if (typeof record.date === "number") {
+          const baseDate = new Date(1899, 11, 30);
+          parsedDate = new Date(baseDate.getTime() + record.date * 86400000);
+        } else {
+          const parsed = moment(record.date, ['DD-MM-YYYY', 'YYYY-MM-DD'], true);
+          if (parsed.isValid()) {
+            parsedDate = parsed.toDate();
+          }
+        }
+
+        if (!parsedDate || isNaN(parsedDate.getTime())) {
+          rowErrors.push({
+            row: index + 1,
+            field: "date",
+            error: "Invalid date format. Use DD-MM-YYYY or Excel serial."
+          });
+        }
+      }
+
+      if (rowErrors.length === 0) {
+        cleanedProjectDebits.push({
+          date: parsedDate,
+          payed_to: String(record.payed_to).trim(),
+          vendor_name: String(record.vendor_name).trim(),
+          amount_inr: parseFloat(record.amount_inr),
+          invoice_number: String(record.invoice_number).trim(),
+          payment_mode: String(record.payment_mode).trim(),
+          payment_bank: String(record.payment_bank).trim()
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors found in uploaded data.",
+        errors
+      });
+    }
+
+    const created = await ProjectDebit.bulkCreate(cleanedProjectDebits, {
+      validate: true,
+      individualHooks: true
+    });
+
+    return res.status(201).json({
+      message: "Project debits imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    console.error("Import Project Debit Error:", err);
+    return res.status(500).json({ error: "Internal server error during import." });
+  }
+};
+
 // ✅ Get vendor details (user-specific)
 exports.getPayTo = async (req, res) => {
     try {

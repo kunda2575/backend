@@ -7,6 +7,7 @@ const projectDebit = require('../../controllers/transactionControllers/projectde
 
 // Create projectDebit
 router.post('/', verifyToken, projectDebit.createProjectDebit);
+router.post('/import', verifyToken, projectDebit.importProjectDebitFromExcel);
 
 // Get projectDebit master details
 router.get('/', verifyToken, projectDebit.getProjectDebitDetails);

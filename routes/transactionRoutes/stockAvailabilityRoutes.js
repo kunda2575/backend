@@ -7,6 +7,7 @@ const stockAvailability = require('../../controllers/transactionControllers/stoc
 
 // Create Material
 router.post('/', verifyToken, stockAvailability.createMaterial);
+router.post('/import', verifyToken, stockAvailability.importStockAvailabilityFromExcel);
 
 // Get Material Details with filtering and pagination
 router.get('/', verifyToken, stockAvailability.getMaterialDetails);

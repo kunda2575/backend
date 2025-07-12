@@ -8,6 +8,8 @@ const projectCredits = require('../../controllers/transactionControllers/project
 // Create projectCredits
 router.post('/', verifyToken, projectCredits.createProjectCredits);
 
+router.post('/import', verifyToken, projectCredits.importProjectCreditFromExcel);
+
 // Get projectCredits master details
 router.get('/', verifyToken, projectCredits.getProjectCreditsDetails);
 

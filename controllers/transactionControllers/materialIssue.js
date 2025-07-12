@@ -1,3 +1,4 @@
+const moment = require('moment');
 const { Op } = require('sequelize');
 const MaterialIssue = require("../../models/transactionModels/materialIssueModel");
 const materialMaster = require("../../models/updateModels/materialMasterSchema");
@@ -38,6 +39,110 @@ exports.createMaterialIssue = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
+const MaterialIssueModel = require('../../models/transactionModels/materialIssueModel'); // Adjust as needed
+
+// Excel serial date conversion
+function excelDateToJSDate(serial) {
+  const excelEpoch = new Date(1899, 11, 30);
+  return new Date(excelEpoch.getTime() + serial * 86400000);
+}
+
+exports.importMaterialIssuesFromExcel = async (req, res) => {
+  try {
+    const materials = req.body.materials;
+
+    if (!Array.isArray(materials) || materials.length === 0) {
+      return res.status(400).json({ error: "No material issue records provided." });
+    }
+
+    const requiredFields = [
+      "material_name",
+      "unit_type",
+      "quantity_issued",
+      "issued_by",
+      "issued_to",
+      "issue_date"
+    ];
+
+    const cleanedMaterials = [];
+    const errors = [];
+
+    materials.forEach((record, index) => {
+      const rowErrors = [];
+
+      // Validate required fields
+      requiredFields.forEach(field => {
+        if (!record[field] || String(record[field]).trim() === "") {
+          rowErrors.push({
+            row: index + 1,
+            field,
+            error: `${field} is required.`
+          });
+        }
+      });
+
+      // Validate and convert issue_date
+      let parsedDate;
+      const rawDate = record.issue_date;
+
+      if (rawDate !== undefined && rawDate !== null) {
+        if (typeof rawDate === 'number') {
+          parsedDate = excelDateToJSDate(rawDate);
+        } else {
+          const parsed = moment(rawDate, ["DD-MM-YYYY", "YYYY-MM-DD"], true);
+          if (parsed.isValid()) {
+            parsedDate = parsed.toDate();
+          }
+        }
+
+        if (!parsedDate || isNaN(parsedDate)) {
+          rowErrors.push({
+            row: index + 1,
+            field: "issue_date",
+            error: "Invalid date format or Excel serial number."
+          });
+        } else {
+          record.issue_date = parsedDate;
+        }
+      }
+
+      if (rowErrors.length > 0) {
+        errors.push(...rowErrors);
+      } else {
+        cleanedMaterials.push({
+          material_name: String(record.material_name).trim(),
+          unit_type: String(record.unit_type).trim(),
+          quantity_issued: parseFloat(record.quantity_issued) || 0,
+          issued_by: String(record.issued_by).trim(),
+          issued_to: String(record.issued_to).trim(),
+          issue_date: record.issue_date
+        });
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors found in imported data.",
+        errors
+      });
+    }
+
+    const created = await MaterialIssue.bulkCreate(cleanedMaterials, {
+      validate: true,
+      individualHooks: true
+    });
+
+    return res.status(201).json({
+      message: "Material issues imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    console.error("Import Material Issues Error:", err);
+    return res.status(500).json({ error: "Internal server error during import." });
+  }
+};
+
 
 exports.getMaterialIssuesDetails = async (req, res) => {
     try {

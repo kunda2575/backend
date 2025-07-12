@@ -205,6 +205,107 @@ exports.deleteProjectCredits = async (req, res) => {
     }
 };
 
+
+
+
+exports.importProjectCreditFromExcel = async (req, res) => {
+  try {
+    const projectCredits = req.body.projectCredits;
+
+    if (!Array.isArray(projectCredits) || projectCredits.length === 0) {
+      return res.status(400).json({ error: "No project credit records provided." });
+    }
+
+    const requiredFields = [
+      "date",
+      "unit_type",
+      "source",
+      "amount_inr",
+      "payment_mode",
+      "purpose",
+      "deposit_bank"
+    ];
+
+    const errors = [];
+    const cleanedProjectCredits = [];
+
+    projectCredits.forEach((record, index) => {
+      const rowErrors = [];
+
+      // ✅ Validate required fields
+      requiredFields.forEach((field) => {
+        const value = record[field];
+        if (value === undefined || value === null || String(value).trim() === "") {
+          rowErrors.push({
+            row: index + 1,
+            field,
+            error: `${field} is required.`
+          });
+        }
+      });
+
+      // ✅ Handle date parsing
+      let parsedDate = null;
+      if (record.date !== undefined && record.date !== null) {
+        if (typeof record.date === "number") {
+          const baseDate = new Date(1899, 11, 30);
+          parsedDate = new Date(baseDate.getTime() + record.date * 86400000);
+        } else {
+          const parsed = moment(record.date, ['DD-MM-YYYY', 'YYYY-MM-DD'], true);
+          if (parsed.isValid()) {
+            parsedDate = parsed.toDate();
+          }
+        }
+
+        if (!parsedDate || isNaN(parsedDate.getTime())) {
+          rowErrors.push({
+            row: index + 1,
+            field: "date",
+            error: "Invalid date format. Use DD-MM-YYYY or Excel serial."
+          });
+        }
+      }
+
+      // ✅ Build valid record
+      if (rowErrors.length === 0) {
+        cleanedProjectCredits.push({
+          date: parsedDate,
+          unit_type: String(record.unit_type).trim(),
+          source: String(record.source).trim(),
+          amount_inr: parseFloat(record.amount_inr),
+          payment_mode: String(record.payment_mode).trim(),
+          purpose: String(record.purpose).trim(),
+          deposit_bank: String(record.deposit_bank).trim()
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors found in uploaded data.",
+        errors
+      });
+    }
+
+    const created = await ProjectCredit.bulkCreate(cleanedProjectCredits, {
+      validate: true,
+      individualHooks: true
+    });
+
+    return res.status(201).json({
+      message: "Project credits imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    console.error("Import Project Credit Error:", err);
+    return res.status(500).json({ error: "Internal server error during import." });
+  }
+};
+
+
 // ✅ Get source details (user-specific)
 exports.getSourceDetails = async (req, res) => {
     try {
