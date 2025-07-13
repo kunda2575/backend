@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../../middleware/verfiyToken');
 
-// Import controller functions
 const expenditure = require('../../controllers/transactionControllers/expenditure');
-const multer = require("multer");
-const upload = multer({ dest: "uploads/" }); // or use diskStorage
 
+const multer = require("multer");
+const storage = multer.memoryStorage(); // ✅ Fix: use memory storage
+const upload = multer({ storage });
 
 router.post(
   '/',
@@ -17,6 +17,9 @@ router.post(
   verifyToken,
   expenditure.createExpenditure
 );
+
+// ... rest unchanged
+
 
 router.post(
   '/import',

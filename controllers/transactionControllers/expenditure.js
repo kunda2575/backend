@@ -47,9 +47,9 @@ const createExpenditure = async (req, res) => {
     const allFiles1 = [...paymentEvidenceFiles];
 
     // Upload to R2
-    const uploaded = await uploadToR2(allFiles, 'payment_reference',vendor_name);
+    const uploaded = await uploadToR2(allFiles, 'payment_reference', vendor_name);
     const uploadedKeys = uploaded.map(f => f.key).join(',');
-    const uploaded1 = await uploadToR2(allFiles1, 'payment_evidence',vendor_name);
+    const uploaded1 = await uploadToR2(allFiles1, 'payment_evidence', vendor_name);
     const uploadedKeys1 = uploaded1.map(f => f.key).join(',');
 
     // Create Expenditure record
@@ -223,7 +223,12 @@ const deleteExpenditure = async (req, res) => {
   }
 };
 
-
+// Excel serial date conversion
+function excelDateToJSDate(serial) {
+  const excelEpoch = new Date(1899, 11, 30);
+  const days = Math.floor(serial); // strip time
+  return new Date(excelEpoch.getTime() + days * 86400000);
+}
 
 const importExpenditureFromExcel = async (req, res) => {
   try {
@@ -266,11 +271,11 @@ const importExpenditureFromExcel = async (req, res) => {
       });
 
       // ✅ Validate and format date
+      // ✅ Validate and format date
       let parsedDate = null;
-      if (record.date) {
+      if (record.date !== undefined && record.date !== null) {
         if (typeof record.date === "number") {
-          const baseDate = new Date(1899, 11, 30);
-          parsedDate = new Date(baseDate.getTime() + record.date * 86400000);
+          parsedDate = excelDateToJSDate(record.date);
         } else {
           const dateMoment = moment(record.date, ['DD-MM-YYYY', 'YYYY-MM-DD'], true);
           if (dateMoment.isValid()) {
@@ -286,6 +291,7 @@ const importExpenditureFromExcel = async (req, res) => {
           });
         }
       }
+
 
       if (rowErrors.length === 0) {
         cleanedExpenditures.push({
@@ -311,7 +317,7 @@ const importExpenditureFromExcel = async (req, res) => {
       });
     }
 
-    const created = await expenditureModel.bulkCreate(cleanedExpenditures, {
+    const created = await Expenditure.bulkCreate(cleanedExpenditures, {
       validate: true,
       individualHooks: true
     });
