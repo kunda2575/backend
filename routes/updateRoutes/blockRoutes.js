@@ -4,6 +4,7 @@ const blocksController = require('../../controllers/updateControllers/blockMaste
 const verifyToken = require('../../middleware/verfiyToken')
 
 router.post('/', verifyToken, blocksController.createBlock);
+router.post('/import', verifyToken, blocksController.importBlockFromExcel);
 router.get('/', verifyToken, blocksController.getBlocks);
 router.put('/:id', verifyToken, blocksController.updateBlock);
 router.delete('/:id', verifyToken, blocksController.deleteBlock);

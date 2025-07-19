@@ -92,6 +92,114 @@ exports.createEmployeeDetails = async (req, res) => {
 };
 
 
+
+exports.importEmployeeExcelData = async (req, res) => {
+  try {
+    const employees = req.body.employee;
+
+    if (!Array.isArray(employees) || employees.length === 0) {
+      return res.status(400).json({ error: "No employee records provided." });
+    }
+
+    const requiredFields = [
+      "employeeID",
+      "employeeName",
+      "employeePhone",
+      "employeeEmail",
+      "idType",
+      "employeeSalary",
+      "department"
+    ];
+
+    const errors = [];
+    const cleanedEmployees = [];
+
+    // Step 1: Validate each row
+    employees.forEach((record, index) => {
+      const rowErrors = [];
+
+      requiredFields.forEach((field) => {
+        if (
+          record[field] === undefined ||
+          record[field] === null ||
+          String(record[field]).trim() === ""
+        ) {
+          rowErrors.push({
+            row: index + 1,
+            field,
+            error: `${field} is required`
+          });
+        }
+      });
+
+      if (rowErrors.length === 0) {
+        cleanedEmployees.push({
+          employeeID: String(record.employeeID).trim(),
+          employeeName: String(record.employeeName).trim(),
+          employeePhone: String(record.employeePhone).trim(),
+          employeeEmail: String(record.employeeEmail).trim(),
+          idType: String(record.idType).trim(),
+          employeeSalary: Number(record.employeeSalary),
+          department: String(record.department).trim(),
+          emp_address: record.emp_address ? String(record.emp_address).trim() : null,
+          idProof1: null // No documents in Excel import
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded Excel data.",
+        errors
+      });
+    }
+
+    // Step 2: Check for duplicates in DB
+    const duplicateConditions = cleanedEmployees.flatMap((emp) => ([
+      { employeeID: emp.employeeID },
+      { employeeEmail: emp.employeeEmail },
+      { employeePhone: emp.employeePhone }
+    ]));
+
+    const existingEmployees = await EmployeeMaster.findAll({
+      where: {
+        [Op.or]: duplicateConditions
+      },
+      attributes: ['employeeID', 'employeeEmail', 'employeePhone']
+    });
+
+    if (existingEmployees.length > 0) {
+      return res.status(400).json({
+        error: 'Duplicate entries found in the database.',
+        duplicates: existingEmployees
+      });
+    }
+
+    // Step 3: Bulk insert
+    const created = await EmployeeMaster.bulkCreate(cleanedEmployees, {
+      validate: true,
+      individualHooks: true
+    });
+
+    res.status(201).json({
+      message: "Employees imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+
+    console.error("Employee import error:", err);
+    res.status(500).json({ error: "Internal server error during employee import." });
+  }
+};
+
+
 // ✅ Read
 exports.getEmployeeDetails = async (req, res) => {
   try {

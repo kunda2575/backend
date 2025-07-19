@@ -2,6 +2,7 @@ const CustomerMaster = require('../../models/updateModels/customerMasterSchema')
 const Lead = require('../../models/transactionModels/leadsModel');
 const { uploadToR2 } = require('../../uploads/r2Uploader');
 const s3 = require('../../config/r2config');
+const { ValidationError } = require('sequelize');
 
 const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
 
@@ -20,7 +21,7 @@ exports.createCustomerDetails = async (req, res) => {
       customerAddress,
       customerProfession,
       languagesKnown,
-      blockNo,
+      customerNo,
       flatNo,
       documentTypes
     } = req.body;
@@ -53,7 +54,7 @@ exports.createCustomerDetails = async (req, res) => {
       customerAddress,
       customerProfession,
       languagesKnown,
-      blockNo,
+      customerNo,
       flatNo,
       documents
     });
@@ -98,7 +99,7 @@ exports.updateCustomersDetails = async (req, res) => {
       customerAddress,
       customerProfession,
       languagesKnown,
-      blockNo,
+      customerNo,
       flatNo,
       documentTypes,
       retainedFiles
@@ -155,7 +156,7 @@ exports.updateCustomersDetails = async (req, res) => {
       customerAddress: customerAddress ?? customer.customerAddress,
       customerProfession: customerProfession ?? customer.customerProfession,
       languagesKnown: languagesKnown ?? customer.languagesKnown,
-      blockNo: blockNo ?? customer.blockNo,
+      customerNo: customerNo ?? customer.customerNo,
       flatNo: flatNo ?? customer.flatNo,
       documents: finalDocs.join(',')
     });
@@ -198,6 +199,89 @@ exports.deleteCustomersDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+
+exports.importCustomerFromExcel = async (req, res) => {
+  try {
+    const customers = req.body.customer;
+
+    if (!Array.isArray(customers) || customers.length === 0) {
+      return res.status(400).json({ error: "No customer records provided." });
+    }
+
+    const requiredFields = ["customerName",
+      "customerPhone", "customerEmail","customerAddress","customerProfession","languagesKnown","flatNo"
+    ];
+    const errors = [];
+    const cleanedCustomers = [];
+
+    customers.forEach((record, index) => {
+      const rowErrors = [];
+
+      // Validate required fields
+      requiredFields.forEach((field) => {
+        if (
+          record[field] === undefined ||
+          record[field] === null ||
+          String(record[field]).trim() === ""
+        ) {
+          rowErrors.push({
+            row: index + 1,
+            field,
+            error: `${field} is required`
+          });
+        }
+      });
+
+      // Removed any date validation here
+
+      if (rowErrors.length === 0) {
+        cleanedCustomers.push({
+          customerName: String(record.customerName).trim(),
+          customerPhone: String(record.customerPhone).trim(),
+          customerEmail: String(record.customerEmail).trim(),
+          blockNo: String(record.blockNo).trim(),
+          customerAddress: record.customerAddress || null,
+          customerProfession: record.customerProfession || null,
+          languagesKnown: record.languagesKnown || null,
+       
+          flatNo: record.flatNo || null
+        });
+
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded Excel data.",
+        errors
+      });
+    }
+
+    const created = await CustomerMaster.bulkCreate(cleanedCustomers, {
+      validate: true,
+      individualHooks: true
+    });
+
+    res.status(201).json({
+      message: "Customers imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+    console.error("Customer import error:", err);
+    res.status(500).json({ error: "Internal server error during customer import." });
+  }
+};
+
+
 
 // ✅ Get single customer for autofill
 exports.getCustomerById = async (req, res) => {

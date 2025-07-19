@@ -12,6 +12,69 @@ exports.createLeadStage = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+exports.importLeadStageData = async (req, res) => {
+  try {
+    const stages = req.body.stages;
+
+    if (!Array.isArray(stages) || stages.length === 0) {
+      return res.status(400).json({ error: "No lead stage records provided." });
+    }
+
+    const requiredField = "leadStage";
+    const errors = [];
+    const cleanedStages = [];
+
+    stages.forEach((record, index) => {
+      const rowErrors = [];
+
+      if (
+        record[requiredField] === undefined ||
+        record[requiredField] === null ||
+        String(record[requiredField]).trim() === ""
+      ) {
+        rowErrors.push({
+          row: index + 1,
+          field: requiredField,
+          error: `${requiredField} is required`
+        });
+      }
+
+      if (rowErrors.length === 0) {
+        cleanedStages.push({
+          leadStage: String(record.leadStage).trim()
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded data.",
+        errors
+      });
+    }
+
+    const created = await LeadStage.bulkCreate(cleanedStages, {
+      validate: true,
+      individualHooks: true
+    });
+
+    res.status(201).json({
+      message: "Lead stages imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    if (err.name === 'SequelizeValidationError') {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+
+    console.error("Lead stage import error:", err);
+    res.status(500).json({ error: "Internal server error during lead stage import." });
+  }
+};
 
 // Read all
 exports.getLeadStages = async (req, res) => {

@@ -7,6 +7,7 @@ const verifyToken = require("../../middleware/verfiyToken");
 const upload = employeeRoutes.upload;
 
 router.post("/",verifyToken, upload.any(),employeeRoutes.createEmployeeDetails)
+router.post("/import",verifyToken, upload.any(),employeeRoutes.importEmployeeExcelData)
 router.get("/",verifyToken,employeeRoutes.getEmployeeDetails)
 router.put("/:id",verifyToken, upload.any(),employeeRoutes.updateEmployeesDetails)
 router.delete("/:id",verifyToken,employeeRoutes.deleteEmployeesDetails)

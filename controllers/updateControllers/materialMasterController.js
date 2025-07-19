@@ -21,6 +21,71 @@ exports.createMaterialMaster = async (req, res) => {
    
   }
 };
+exports.importMaterialMasterData = async (req, res) => {
+  try {
+    const materials = req.body.materials;
+
+    if (!Array.isArray(materials) || materials.length === 0) {
+      return res.status(400).json({ error: "No material records provided." });
+    }
+
+    const requiredFields = ["material_id", "materialName"];
+    const errors = [];
+    const cleanedMaterials = [];
+
+    materials.forEach((record, index) => {
+      const rowErrors = [];
+
+      requiredFields.forEach((field) => {
+        if (
+          record[field] === undefined ||
+          record[field] === null ||
+          String(record[field]).trim() === ""
+        ) {
+          rowErrors.push({
+            row: index + 1,
+            field,
+            error: `${field} is required`
+          });
+        }
+      });
+
+      if (rowErrors.length === 0) {
+        cleanedMaterials.push({
+          material_id: String(record.material_id).trim(),
+          materialName: String(record.materialName).trim()
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded material data.",
+        errors
+      });
+    }
+
+    const created = await MaterialMaster.bulkCreate(cleanedMaterials, {
+      validate: true,
+      individualHooks: true
+    });
+
+    res.status(201).json({
+      message: "Materials imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+    console.error("Material import error:", err);
+    res.status(500).json({ error: "Internal server error during material import." });
+  }
+};
 
 
 // Read all

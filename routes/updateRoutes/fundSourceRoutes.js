@@ -5,6 +5,7 @@ const fundSourceController = require('../../controllers/updateControllers/fundSo
 const verifyToken = require('../../middleware/verfiyToken');
 
 router.post('/', verifyToken,fundSourceController.createFundSource);
+router.post('/import', verifyToken,fundSourceController.importFundSourceData);
 router.get('/',verifyToken, fundSourceController.getFundSources);
 router.put('/:id', verifyToken,fundSourceController.updateFundSource);
 router.delete('/:id',verifyToken, fundSourceController.deleteFundSource);

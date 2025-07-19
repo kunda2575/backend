@@ -5,6 +5,7 @@ const vendorMaster = require('../../controllers/updateControllers/vendorMasterCo
 const verifyToken = require('../../middleware/verfiyToken');
 
 router.post('/', verifyToken,vendorMaster.createVendor);
+router.post('/import', verifyToken,vendorMaster.importVendorsExcelData);
 router.get('/', verifyToken,vendorMaster.getVendors);
 router.put('/:id', verifyToken,vendorMaster.updateVendor);
 router.delete('/:id', verifyToken,vendorMaster.deleteVendor);

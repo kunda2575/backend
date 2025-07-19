@@ -1,4 +1,5 @@
 const BlocksMaster = require('../../models/updateModels/blocksMasterSchema');
+const { ValidationError } = require('sequelize');
 
 // Create
 exports.createBlock = async (req, res) => {
@@ -8,7 +9,7 @@ exports.createBlock = async (req, res) => {
     const newBlock = await BlocksMaster.create({ blockNoOrName });
     res.status(201).json(newBlock);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });block
   }
 };
 
@@ -52,5 +53,74 @@ exports.deleteBlock = async (req, res) => {
     res.json({ message: "Block deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.importBlockFromExcel = async (req, res) => {
+  try {
+    const blocks = req.body.block;
+
+    if (!Array.isArray(blocks) || blocks.length === 0) {
+      return res.status(400).json({ error: "No block records provided." });
+    }
+
+    const requiredFields = ["blockNoOrName"];
+    const errors = [];
+    const cleanedBlocks = [];
+
+    blocks.forEach((record, index) => {
+      const rowErrors = [];
+
+      // Validate required fields
+      requiredFields.forEach((field) => {
+        if (
+          record[field] === undefined ||
+          record[field] === null ||
+          String(record[field]).trim() === ""
+        ) {
+          rowErrors.push({
+            row: index + 1,
+            field,
+            error: `${field} is required`
+          });
+        }
+      });
+
+      // Removed any date validation here
+
+      if (rowErrors.length === 0) {
+        cleanedBlocks.push({
+          blockNoOrName: String(record.blockNoOrName).trim(),
+          // No date fields included here
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded Excel data.",
+        errors
+      });
+    }
+
+    const created = await BlocksMaster.bulkCreate(cleanedBlocks, {
+      validate: true,
+      individualHooks: true
+    });
+
+    res.status(201).json({
+      message: "Blocks imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+    console.error("Block import error:", err);
+    res.status(500).json({ error: "Internal server error during block import." });
   }
 };

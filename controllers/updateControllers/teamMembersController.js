@@ -20,6 +20,75 @@ exports.createTeamMemberDetails = async (req,res) =>{
     }
 }
 
+exports.importTeamMembersExcelData = async (req, res) => {
+  try {
+    const teamMembers = req.body.teamMembers;
+
+    if (!Array.isArray(teamMembers) || teamMembers.length === 0) {
+      return res.status(400).json({ error: "No team member records provided." });
+    }
+
+    const requiredFields = ["team_name", "team_phone", "team_email"];
+    const errors = [];
+    const cleanedTeamMembers = [];
+
+    teamMembers.forEach((record, index) => {
+      const rowErrors = [];
+
+      requiredFields.forEach(field => {
+        if (
+          record[field] === undefined ||
+          record[field] === null ||
+          String(record[field]).trim() === ""
+        ) {
+          rowErrors.push({
+            row: index + 1,
+            field,
+            error: `${field} is required`
+          });
+        }
+      });
+
+      if (rowErrors.length === 0) {
+        cleanedTeamMembers.push({
+          team_name: String(record.team_name).trim(),
+          team_phone: String(record.team_phone).trim(),
+          team_email: String(record.team_email).trim(),
+          team_address: record.team_address ? String(record.team_address).trim() : null,
+          team_designation: record.team_designation ? String(record.team_designation).trim() : null,
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded data.",
+        errors
+      });
+    }
+
+    const created = await TeamMembers.bulkCreate(cleanedTeamMembers, {
+      validate: true,
+      individualHooks: true
+    });
+
+    res.status(201).json({
+      message: "Team members imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map(e => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+    console.error("Team member import error:", err);
+    res.status(500).json({ error: "Internal server error during import." });
+  }
+};
+
 // read
 exports.getTeamMemberDetails = async(req,res)=>{
  try {

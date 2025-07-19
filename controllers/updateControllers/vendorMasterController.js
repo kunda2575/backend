@@ -17,6 +17,78 @@ exports.createVendor = async (req, res) => {
   }
 };
 
+exports.importVendorsExcelData = async (req, res) => {
+  try {
+    const vendors = req.body.vendors;
+
+    if (!Array.isArray(vendors) || vendors.length === 0) {
+      return res.status(400).json({ error: "No vendor records provided." });
+    }
+
+    const requiredFields = ["vendorId", "vendorName", "services", "phone", "address"];
+    const errors = [];
+    const cleanedVendors = [];
+
+    vendors.forEach((record, index) => {
+      const rowErrors = [];
+
+      requiredFields.forEach((field) => {
+        if (
+          record[field] === undefined ||
+          record[field] === null ||
+          String(record[field]).trim() === ""
+        ) {
+          rowErrors.push({
+            row: index + 1,
+            field,
+            error: `${field} is required`
+          });
+        }
+      });
+
+      if (rowErrors.length === 0) {
+        cleanedVendors.push({
+          vendorId: String(record.vendorId).trim(),
+          vendorName: String(record.vendorName).trim(),
+          services: String(record.services).trim(),
+          phone: String(record.phone).trim(),
+          address: String(record.address).trim(),
+          city: record.city ? String(record.city).trim() : null
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded vendor data.",
+        errors
+      });
+    }
+
+    const created = await VendorMaster.bulkCreate(cleanedVendors, {
+      validate: true,
+      individualHooks: true
+    });
+
+    res.status(201).json({
+      message: "Vendors imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+
+    console.error("Vendor import error:", err);
+    res.status(500).json({ error: "Internal server error during vendor import." });
+  }
+};
+
+
 // Read all
 exports.getVendors = async (req, res) => {
   try {

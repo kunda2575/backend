@@ -5,6 +5,7 @@ const leadStageController = require('../../controllers/updateControllers/leadSta
 const verifyToken = require('../../middleware/verfiyToken');
 
 router.post('/', verifyToken,leadStageController.createLeadStage);
+router.post('/import', verifyToken,leadStageController.importLeadStageData);
 router.get('/', verifyToken,leadStageController.getLeadStages);
 router.put('/:id', verifyToken,leadStageController.updateLeadStage);
 router.delete('/:id', verifyToken,leadStageController.deleteLeadStage);

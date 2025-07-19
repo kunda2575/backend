@@ -12,6 +12,71 @@ exports.createLeadSource = async (req, res) => {
   }
 };
 
+exports.importLeadSourceData = async (req, res) => {
+  try {
+    const sources = req.body.sources;
+
+    if (!Array.isArray(sources) || sources.length === 0) {
+      return res.status(400).json({ error: "No lead source records provided." });
+    }
+
+    const requiredField = "leadSource";
+    const errors = [];
+    const cleanedSources = [];
+
+    sources.forEach((record, index) => {
+      const rowErrors = [];
+
+      if (
+        record[requiredField] === undefined ||
+        record[requiredField] === null ||
+        String(record[requiredField]).trim() === ""
+      ) {
+        rowErrors.push({
+          row: index + 1,
+          field: requiredField,
+          error: `${requiredField} is required`
+        });
+      }
+
+      if (rowErrors.length === 0) {
+        cleanedSources.push({
+          leadSource: String(record.leadSource).trim()
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded data.",
+        errors
+      });
+    }
+
+    const created = await LeadSource.bulkCreate(cleanedSources, {
+      validate: true,
+      individualHooks: true
+    });
+
+    res.status(201).json({
+      message: "Lead sources imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    if (err.name === 'SequelizeValidationError') {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+
+    console.error("Import error:", err);
+    res.status(500).json({ error: "Internal server error during lead source import." });
+  }
+};
+
+
 // Read all
 exports.getLeadSources = async (req, res) => {
   try {

@@ -5,6 +5,7 @@ const teamRoutes = require('../../controllers/updateControllers/teamMembersContr
 const verifyToken = require("../../middleware/verfiyToken");
 
 router.post("/",verifyToken,teamRoutes.createTeamMemberDetails)
+router.post("/import",verifyToken,teamRoutes.importTeamMembersExcelData)
 router.get("/",verifyToken,teamRoutes.getTeamMemberDetails)
 router.put("/:id",verifyToken,teamRoutes.updateTeamMemberDetails)
 router.delete("/:id",verifyToken,teamRoutes.deleteTeamMemberDetails)

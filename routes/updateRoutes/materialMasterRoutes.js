@@ -5,6 +5,7 @@ const materialMasterController = require('../../controllers/updateControllers/ma
 const verifyToken = require('../../middleware/verfiyToken');
 
 router.post('/', verifyToken,materialMasterController.createMaterialMaster);
+router.post('/import', verifyToken,materialMasterController.importMaterialMasterData);
 router.get('/', verifyToken,materialMasterController.getMaterialMasters);
 router.put('/:id', verifyToken,materialMasterController.updateMaterialMaster);
 router.delete('/:id', verifyToken,materialMasterController.deleteMaterialMaster);

@@ -85,6 +85,8 @@ app.use(cors({
 }));
 app.use(express.json());
 
+app.use(express.urlencoded({ extended: true }));
+
 // ✅ Preflight requests handler (optional but helpful)
 app.options("*", cors({
   origin: "http://localhost:5173",

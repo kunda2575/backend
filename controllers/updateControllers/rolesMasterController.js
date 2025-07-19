@@ -1,3 +1,4 @@
+const { ValidationError } = require('sequelize');
 const Roles = require('../../models/updateModels/rolesMasterSchema');
 
 // Create
@@ -9,6 +10,58 @@ exports.createRoles = async (req, res) => {
     res.status(201).json(newRoles);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.importRolesData = async (req, res) => {
+  try {
+    const roles = req.body.roles;
+
+    if (!Array.isArray(roles) || roles.length === 0) {
+      return res.status(400).json({ error: "No roles records provided." });
+    }
+
+    const errors = [];
+    const cleanedRoles = [];
+
+    roles.forEach((record, index) => {
+      if (!record.rolesName || String(record.rolesName).trim() === "") {
+        errors.push({
+          row: index + 1,
+          field: "rolesName",
+          error: "rolesName is required"
+        });
+      } else {
+        cleanedRoles.push({
+          rolesName: String(record.rolesName).trim()
+        });
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded roles data.",
+        errors
+      });
+    }
+
+    const created = await Roles.bulkCreate(cleanedRoles, {
+      validate: true,
+      individualHooks: true
+    });
+
+    res.status(201).json({
+      message: "Roles imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map(e => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+    console.error("Roles import error:", err);
+    res.status(500).json({ error: "Internal server error during roles import." });
   }
 };
 

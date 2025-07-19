@@ -53,7 +53,7 @@ const ProjectMaster = sequelize.define(
       validate: {
         notEmpty: { msg: 'Project address is required' },
         len: {
-          args: [10, 255],
+          args: [1, 255],
           msg: 'Project address must be at least 10 characters'
         }
       }
@@ -70,24 +70,24 @@ const ProjectMaster = sequelize.define(
     expectedStartDate: {
       type: DataTypes.DATE,
       allowNull: false,
-      validate: {
-        isDate: { msg: 'expectd start date must be a valid date' },
-        notEmpty: { msg: 'expectd start date is required' }
-      }
+      // validate: {
+      //   isDate: { msg: 'expectd start date must be a valid date' },
+      //   notEmpty: { msg: 'expectd start date is required' }
+      // }
     },
 
     expectedEndDate: {
       type: DataTypes.DATE,
       allowNull: false,
-      validate: {
-        isDate: { msg: 'expectd end date must be a valid date' },
-        notEmpty: { msg: 'expectd end date is required' },
-        isAfterStartDate(value) {
-          if (this.expectdStartDate && value < this.expectdStartDate) {
-            throw new Error('End date must be after start date');
-          }
-        }
-      }
+      // validate: {
+      //   isDate: { msg: 'expectd end date must be a valid date' },
+      //   notEmpty: { msg: 'expectd end date is required' },
+      //   isAfterStartDate(value) {
+      //     if (this.expectdStartDate && value < this.expectdStartDate) {
+      //       throw new Error('End date must be after start date');
+      //     }
+      //   }
+      // }
     }
   },
   {

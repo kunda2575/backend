@@ -51,7 +51,7 @@ exports.createProjectDetails = async (req, res) => {
     }));
 
 
-     const uploadedFiles = await uploadToR2(filesWithDocTypes, "project_master", "system_upload");
+    const uploadedFiles = await uploadToR2(filesWithDocTypes, "project_master", "system_upload");
     const uploadedKeys = uploadedFiles.map(file => file.key);
     const projectBrouchers = uploadedKeys.join(',');
 
@@ -72,6 +72,143 @@ exports.createProjectDetails = async (req, res) => {
       return res.status(400).json({ error: messages.join(', ') });
     }
     res.status(500).json({ error: err.message });
+  }
+};
+
+// Converts Excel serial number to JS Date
+function excelDateToJSDate(serial) {
+  const excelEpoch = new Date(1899, 11, 30);
+  const days = Math.floor(serial);
+  return new Date(excelEpoch.getTime() + days * 86400000);
+}
+
+exports.importProjectData = async (req, res) => {
+  try {
+    const projects = req.body.projects;
+
+    if (!Array.isArray(projects) || projects.length === 0) {
+      return res.status(400).json({ error: "No project records provided." });
+    }
+
+    const requiredFields = ["projectName", "projectOwner", "projectContact", "projectAddress"];
+    const errors = [];
+    const cleanedProjects = [];
+
+    projects.forEach((record, index) => {
+      const rowErrors = [];
+
+      // Validate required fields
+      requiredFields.forEach(field => {
+        if (!record[field] || String(record[field]).trim() === "") {
+          rowErrors.push({
+            row: index + 1,
+            field,
+            error: `${field} is required`
+          });
+        }
+      });
+
+      // Enhanced Date parsing helper
+      const parseDateField = (value, label) => {
+        if (!value) {
+          rowErrors.push({
+            row: index + 1,
+            field: label,
+            error: `${label} is required.`
+          });
+          return null;
+        }
+
+        let date = null;
+
+        // Excel serial number check
+        if (typeof value === 'number' || (!isNaN(value) && Number(value) > 10000)) {
+          date = excelDateToJSDate(Number(value));
+        } else if (typeof value === 'string') {
+          // Check for DD-MM-YYYY or DD/MM/YYYY
+          const dmyMatch = value.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+          if (dmyMatch) {
+            const [, day, month, year] = dmyMatch;
+            date = new Date(`${year}-${month}-${day}`);
+          } else {
+            // Fallback to native parsing
+            const parsed = new Date(value);
+            date = isNaN(parsed.getTime()) ? null : parsed;
+          }
+        }
+
+        if (!date || isNaN(date.getTime())) {
+          rowErrors.push({
+            row: index + 1,
+            field: label,
+            error: `${label} must be a valid date. Received: ${value}`
+          });
+        }
+
+        return date;
+      };
+
+
+      const expectedStartDate = parseDateField(record.expectedStartDate, "Expected Start Date");
+      const expectedEndDate = parseDateField(record.expectedEndDate, "Expected End Date");
+
+      // Optional: check if end date is after start date
+      if (expectedStartDate && expectedEndDate && expectedEndDate < expectedStartDate) {
+        rowErrors.push({
+          row: index + 1,
+          field: "Expected End Date",
+          error: "Expected End Date must be after Expected Start Date."
+        });
+      }
+
+      // Project address minimum length
+      if (record.projectAddress && record.projectAddress.trim().length < 10) {
+        rowErrors.push({
+          row: index + 1,
+          field: "projectAddress",
+          error: "Project address must be at least 10 characters."
+        });
+      }
+
+      if (rowErrors.length === 0) {
+        cleanedProjects.push({
+          projectName: String(record.projectName).trim(),
+          projectOwner: String(record.projectOwner).trim(),
+          projectContact: String(record.projectContact).trim(),
+          projectAddress: String(record.projectAddress).trim(),
+          expectedStartDate,
+          expectedEndDate,
+          projectBrouchers: record.projectBrouchers || null
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded project data.",
+        errors
+      });
+    }
+
+    const created = await ProjectMaster.bulkCreate(cleanedProjects, {
+      validate: true,
+      individualHooks: true
+    });
+
+    res.status(201).json({
+      message: "Projects imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      const messages = err.errors.map(e => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+    console.error("Project import error:", err);
+    res.status(500).json({ error: "Internal server error during project import." });
   }
 };
 

@@ -270,7 +270,7 @@ const importExpenditureFromExcel = async (req, res) => {
         }
       });
 
-      // ✅ Validate and format date
+     
       // ✅ Validate and format date
       let parsedDate = null;
       if (record.date !== undefined && record.date !== null) {

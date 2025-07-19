@@ -14,6 +14,12 @@ router.post(
   upload.any(), // Field name should match form
   projectController.createProjectDetails
 );
+router.post(
+  "/import",
+  verifyToken,
+  upload.any(), // Field name should match form
+  projectController.importProjectData
+);
 
 // ✅ Get all projects
 router.get("/", verifyToken, projectController.getProjectDetails);

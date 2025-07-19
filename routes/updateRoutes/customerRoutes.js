@@ -11,6 +11,8 @@ const upload = multer(); // stores files in memory
 // router.post('/', verifyToken, upload.array('documents'), customerController.createCustomerDetails);
 router.post('/', verifyToken, upload.any(), customerController.createCustomerDetails);
 
+router.post('/import', verifyToken, upload.any(), customerController.importCustomerFromExcel);
+
 
 // ✅ Read all customers
 router.get('/', verifyToken, customerController.getCustomerDetails);

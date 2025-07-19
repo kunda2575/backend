@@ -4,6 +4,8 @@ const bankMasterController = require('../../controllers/updateControllers/bankMa
 const verifyToken = require('../../middleware/verfiyToken')
 
 router.post('/',verifyToken, bankMasterController.createBankDetails);
+
+router.post('/import',verifyToken, bankMasterController.importBankFromExcel);
 router.get('/', verifyToken,bankMasterController.getBankDetails);
 router.put('/:id', verifyToken,bankMasterController.updateBankDetails);
 router.delete('/:id',verifyToken, bankMasterController.deleteBankDetails);

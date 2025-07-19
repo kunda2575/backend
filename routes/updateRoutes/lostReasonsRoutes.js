@@ -5,6 +5,7 @@ const leadReasonsController = require('../../controllers/updateControllers/lostR
 const verifyToken = require('../../middleware/verfiyToken');
 
 router.post('/', verifyToken,leadReasonsController.createLostReasons);
+router.post('/import', verifyToken,leadReasonsController.importLostReasonsData);
 router.get('/', verifyToken,leadReasonsController.getLostReasons);
 router.put('/:id', verifyToken,leadReasonsController.updateLostReasons);
 router.delete('/:id', verifyToken,leadReasonsController.deleteLostReasons);

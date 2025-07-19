@@ -11,6 +11,69 @@ exports.createLostReasons = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+exports.importLostReasonsData = async (req, res) => {
+  try {
+    const reasons = req.body.reasons;
+
+    if (!Array.isArray(reasons) || reasons.length === 0) {
+      return res.status(400).json({ error: "No lost reason records provided." });
+    }
+
+    const requiredField = "lostReason";
+    const errors = [];
+    const cleanedReasons = [];
+
+    reasons.forEach((record, index) => {
+      const rowErrors = [];
+
+      if (
+        record[requiredField] === undefined ||
+        record[requiredField] === null ||
+        String(record[requiredField]).trim() === ""
+      ) {
+        rowErrors.push({
+          row: index + 1,
+          field: requiredField,
+          error: `${requiredField} is required`
+        });
+      }
+
+      if (rowErrors.length === 0) {
+        cleanedReasons.push({
+          lostReason: String(record.lostReason).trim()
+        });
+      } else {
+        errors.push(...rowErrors);
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: "Validation errors in uploaded data.",
+        errors
+      });
+    }
+
+    const created = await LostReasons.bulkCreate(cleanedReasons, {
+      validate: true,
+      individualHooks: true
+    });
+
+    res.status(201).json({
+      message: "Lost reasons imported successfully.",
+      count: created.length
+    });
+
+  } catch (err) {
+    if (err.name === 'SequelizeValidationError') {
+      const messages = err.errors.map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+
+    console.error("Lost reason import error:", err);
+    res.status(500).json({ error: "Internal server error during lost reason import." });
+  }
+};
 
 // Read all
 exports.getLostReasons = async (req, res) => {

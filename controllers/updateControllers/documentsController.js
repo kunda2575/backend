@@ -163,3 +163,73 @@ exports.deleteDocumentsDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+exports.importDocumentFromExcel = async (req, res) => {
+    try {
+        const documents = req.body.documents;
+
+        if (!Array.isArray(documents) || documents.length === 0) {
+            return res.status(400).json({ error: "No document records provided." });
+        }
+
+        const requiredFields = ["documentTypes"];
+        const errors = [];
+        const cleanedDocuments = [];
+
+        documents.forEach((record, index) => {
+            const rowErrors = [];
+
+            // Validate required fields
+            requiredFields.forEach((field) => {
+                if (
+                    record[field] === undefined ||
+                    record[field] === null ||
+                    String(record[field]).trim() === ""
+                ) {
+                    rowErrors.push({
+                        row: index + 1,
+                        field,
+                        error: `${field} is required`
+                    });
+                }
+            });
+
+            // Removed any date validation here
+
+            if (rowErrors.length === 0) {
+                cleanedDocuments.push({
+                    documentTypes: String(record.documentTypes).trim(),
+                  
+                });
+            } else {
+                errors.push(...rowErrors);
+            }
+        });
+
+        if (errors.length > 0) {
+            return res.status(400).json({
+                message: "Validation errors in uploaded Excel data.",
+                errors
+            });
+        }
+
+        const created = await DocumentsMaster.bulkCreate(cleanedDocuments, {
+            validate: true,
+            individualHooks: true
+        });
+
+        res.status(201).json({
+            message: "Documents imported successfully.",
+            count: created.length
+        });
+
+    } catch (err) {
+        if (err instanceof ValidationError) {
+            const messages = err.errors.map((e) => e.message);
+            return res.status(400).json({ error: messages.join(', ') });
+        }
+        console.error("Document import error:", err);
+        res.status(500).json({ error: "Internal server error during document import." });
+    }
+};

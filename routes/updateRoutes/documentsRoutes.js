@@ -4,6 +4,7 @@ const controller = require('../../controllers/updateControllers/documentsControl
 const authenticate = require('../../middleware/verfiyToken'); // JWT middleware
 
 router.post('/', authenticate, controller.upload.any(), controller.createDocumentsDetails);
+router.post('/import', authenticate, controller.upload.any(), controller.importDocumentFromExcel);
 router.get('/', authenticate, controller.getDocumentsDetails);
 router.put('/:id', authenticate, controller.upload.any(), controller.updateDocumentsDetails);
 router.delete('/:id', authenticate, controller.deleteDocumentsDetails);
