@@ -23,6 +23,7 @@ exports.createCustomerDetails = async (req, res) => {
       languagesKnown,
       customerNo,
       flatNo,
+      blockNo,
       documentTypes
     } = req.body;
 
@@ -56,6 +57,7 @@ exports.createCustomerDetails = async (req, res) => {
       languagesKnown,
       customerNo,
       flatNo,
+      blockNo,
       documents
     });
 
@@ -101,6 +103,7 @@ exports.updateCustomersDetails = async (req, res) => {
       languagesKnown,
       customerNo,
       flatNo,
+      blockNo,
       documentTypes,
       retainedFiles
     } = req.body;
@@ -157,6 +160,7 @@ exports.updateCustomersDetails = async (req, res) => {
       customerProfession: customerProfession ?? customer.customerProfession,
       languagesKnown: languagesKnown ?? customer.languagesKnown,
       customerNo: customerNo ?? customer.customerNo,
+      blockNo: blockNo ?? customer.blockNo,
       flatNo: flatNo ?? customer.flatNo,
       documents: finalDocs.join(',')
     });
@@ -242,6 +246,7 @@ exports.importCustomerFromExcel = async (req, res) => {
           customerPhone: String(record.customerPhone).trim(),
           customerEmail: String(record.customerEmail).trim(),
           blockNo: String(record.blockNo).trim(),
+          flatNo: String(record.flatNo).trim(),
           customerAddress: record.customerAddress || null,
           customerProfession: record.customerProfession || null,
           languagesKnown: record.languagesKnown || null,

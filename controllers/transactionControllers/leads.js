@@ -338,6 +338,7 @@ exports.importLeadsFromExcel = async (req, res) => {
       return res.status(400).json({ error: messages.join(', ') });
     }
 
-    return res.status(500).json({ error: "Internal server error during import." });
+ return res.status(500).json({ error: err.stack || err.message || "Internal server error during import." });
+
   }
 };

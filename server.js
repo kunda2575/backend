@@ -146,13 +146,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   setHeaders: (res, filePath) => {
     const ext = path.extname(filePath).toLowerCase();
-    const mimeTypes = {
-      '.pdf': 'application/pdf',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif'
-    };
+   const mimeTypes = {
+  '.pdf': 'application/pdf',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+
+  '.csv': 'text/csv' // ✅ Added CSV support
+};
+
 
     const mimeType = mimeTypes[ext] || 'application/octet-stream';
     res.setHeader('Content-Type', mimeType);

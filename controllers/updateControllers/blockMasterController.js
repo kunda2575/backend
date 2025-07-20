@@ -13,6 +13,8 @@ exports.createBlock = async (req, res) => {
   }
 };
 
+//------------------------------------------------------------------------------------------------------------
+
 // Read all
 exports.getBlocks = async (req, res) => {
   try {
@@ -23,6 +25,10 @@ exports.getBlocks = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+//------------------------------------------------------------------------------------------------------------
+
 
 // Update
 exports.updateBlock = async (req, res) => {
@@ -43,6 +49,8 @@ exports.updateBlock = async (req, res) => {
   }
 };
 
+//-------------------------------------------------------------------------------------------------------------
+
 // Delete
 exports.deleteBlock = async (req, res) => {
   try {
@@ -55,6 +63,8 @@ exports.deleteBlock = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 exports.importBlockFromExcel = async (req, res) => {
   try {
@@ -111,16 +121,16 @@ exports.importBlockFromExcel = async (req, res) => {
     });
 
     res.status(201).json({
-      message: "Blocks imported successfully.",
+      message: "Blocksssss imported successfully.",
       count: created.length
     });
 
   } catch (err) {
+    console.error("Block import error:", err);
     if (err instanceof ValidationError) {
       const messages = err.errors.map((e) => e.message);
       return res.status(400).json({ error: messages.join(', ') });
     }
-    console.error("Block import error:", err);
     res.status(500).json({ error: "Internal server error during block import." });
   }
 };
