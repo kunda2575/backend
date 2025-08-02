@@ -12,105 +12,153 @@ exports.upload = upload;
 
 const PUBLIC_R2_BASE_URL = process.env.PUBLIC_R2_BASE_URL;
 
-// ✅ Correct URL builder
+//  Correct URL builder
 const getR2FileUrl = (key) => `${PUBLIC_R2_BASE_URL}/${key}`;
 
 
-// ✅ Create
+//--------------------------------------------------------------------------------------------------------------
+
 exports.createDocumentsDetails = async (req, res) => {
   try {
+    const projectId = req.projectId;
+    const projectName = req.projectName;
+console.log("project name is ",projectName)
     const { documentTypes } = req.body;
     const files = req.files || [];
+
+    console.log("Request body:", req.body);
+    console.log("Project ID:", projectId);
+    console.log("Files:", files);
 
     if (!files.length) {
       return res.status(400).json({ error: "No files uploaded" });
     }
 
+    // Parse document types if sent
     let parsedDocTypes = [];
     try {
-      parsedDocTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : [];
+      parsedDocTypes = typeof documentTypes === 'string'
+        ? JSON.parse(documentTypes)
+        : [];
     } catch (err) {
       return res.status(400).json({ error: 'Invalid documentTypes format' });
     }
 
+    // Attach documentType to each file (optional)
     const filesWithDocTypes = files.map((file, i) => ({
       ...file,
       documentType: parsedDocTypes[i] || 'unknown'
     }));
 
-    const uploadedFiles = await uploadToR2(filesWithDocTypes, "documents_master", "system_upload");
-    const uploadedKeys = uploadedFiles.map(file => file.key);
-    const documentsUpload = uploadedKeys.join(',');
+    // Upload files to R2
+    const uploadedFiles = await uploadToR2(projectName,filesWithDocTypes, "documents_master", "system_upload");
+console.log("headers",uploadedFiles)
+    // Join all public URLs (not just keys)
 
+    const documentUrls = uploadedFiles.map(file => file.url.replace(/^public_url\s*=\s*/, '')
+);
 
-    const newDocuments = await DocumentsMaster.create({ documentsUpload });
+    const documentsUpload = documentUrls.join(',');
 
-    res.status(201).json(newDocuments);
+    // Save in DB (including full public URLs)
+    const newDocuments = await DocumentsMaster.create({
+      documentsUpload,
+      projectId
+    });
+
+    res.status(201).json({
+      message: 'Documents uploaded successfully',
+      data: newDocuments
+    });
+
   } catch (err) {
     console.error('Error creating documents:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// ✅ Read
+//--------------------------------------------------------------------------------------------------------------
+
 exports.getDocumentsDetails = async (req, res) => {
   try {
-    const documentsDetails = await DocumentsMaster.findAll();
+    const projectId = req.projectId;
 
-    const formatted = documentsDetails.map(doc => ({
-      ...doc.toJSON(),
-      documentsUpload: doc.documentsUpload
-        ? doc.documentsUpload.split(',').map(getR2FileUrl)
-        : []
-    }));
+    const documentsDetails = await DocumentsMaster.findAll({ where: { projectId } });
+
+    const formatted = documentsDetails.map(doc => {
+      const docJson = doc.toJSON();
+      return {
+        ...docJson,
+        documentsUpload: docJson.documentsUpload
+          ? docJson.documentsUpload.split(',').map(url => url.trim())
+          : []
+      };
+    });
 
     res.status(200).json(formatted);
   } catch (err) {
+    console.error("Error fetching documents:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// ✅ Update
+//--------------------------------------------------------------------------------------------------------------
 exports.updateDocumentsDetails = async (req, res) => {
   try {
     const { id } = req.params;
     const { documentTypes, retainedFiles } = req.body;
+
+    // Get project name from middleware (safely fallback)
+    const projectName = req.projectName || 'default_project';
 
     const documents = await DocumentsMaster.findOne({ where: { id } });
     if (!documents) {
       return res.status(404).json({ error: "Documents not found" });
     }
 
-    // Parse retained file keys
-    let retainedFileKeys = [];
+    // Parse retained file URLs
+    let retainedFileUrls = [];
     try {
-      retainedFileKeys = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : [];
+      retainedFileUrls = typeof retainedFiles === 'string'
+        ? JSON.parse(retainedFiles)
+        : Array.isArray(retainedFiles)
+        ? retainedFiles
+        : [];
     } catch (err) {
       return res.status(400).json({ error: 'Invalid retainedFiles format' });
     }
 
-    const oldDocs = documents.documentsUpload ? documents.documentsUpload.split(',') : [];
-    const filesToDelete = oldDocs.filter((key) => !retainedFileKeys.includes(key));
+    // Get old document URLs
+    const oldDocs = documents.documentsUpload
+      ? documents.documentsUpload.split(',').map(url => url.trim())
+      : [];
 
-    // ✅ Delete removed files from R2
+    // Find which files to delete
+    const filesToDelete = oldDocs.filter(url => !retainedFileUrls.includes(url));
+
+    // Delete from R2 if needed
     if (filesToDelete.length > 0) {
       await s3.deleteObjects({
         Bucket: R2_BUCKET_NAME,
         Delete: {
-          Objects: filesToDelete.map(key => ({ Key: key })),
+          Objects: filesToDelete.map(url => ({
+            Key: url.replace(`${PUBLIC_R2_BASE_URL}/`, '')
+          })),
           Quiet: true
         }
       }).promise();
     }
 
-    // ✅ Upload new files (if any)
-    const files = req.files || [];
-    let newUploadedKeys = [];
+    // Handle new uploads
+    const files = Array.isArray(req.files) ? req.files : [];
+    let newUploadedUrls = [];
 
     if (files.length > 0) {
       let parsedDocTypes = [];
       try {
-        parsedDocTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : [];
+        parsedDocTypes = typeof documentTypes === 'string'
+          ? JSON.parse(documentTypes)
+          : [];
       } catch (err) {
         return res.status(400).json({ error: 'Invalid documentTypes format' });
       }
@@ -120,23 +168,43 @@ exports.updateDocumentsDetails = async (req, res) => {
         documentType: parsedDocTypes[i] || 'unknown'
       }));
 
-      const uploadedFiles = await uploadToR2(filesWithDocTypes, "documents_master_edit", "system_edit");
-      newUploadedKeys = uploadedFiles.map(file => file.key); // 🔧 Extract keys only
+      const uploadedFiles = await uploadToR2(
+        projectName,                  // ✅ Fixed: projectName
+        filesWithDocTypes,            // ✅ files array
+        "documents_master_edit",      // ✅ masterType
+        "system_edit"                 // ✅ folder/customerName
+      );
+
+      if (!Array.isArray(uploadedFiles)) {
+        return res.status(500).json({ error: 'File upload failed or returned unexpected data' });
+      }
+
+      newUploadedUrls = uploadedFiles.map(file =>
+        (file.url || '').replace(/^public_url\s*=\s*/, '')
+      );
     }
 
+    // Merge retained and new files
+   const normalizedRetainedUrls = retainedFileUrls.map(url =>
+  url.startsWith('http') ? url : `${PUBLIC_R2_BASE_URL}/${url}`
+);
 
-    // 🧠 Merge retained + new
-    const finalDocs = [...retainedFileKeys, ...newUploadedKeys];
+const finalUrls = [...normalizedRetainedUrls, ...newUploadedUrls];
+
 
     await documents.update({
-      documentsUpload: finalDocs.join(',')
+      documentsUpload: finalUrls.join(',')
     });
 
     res.status(200).json(documents);
   } catch (err) {
+    console.error('Error updating documents:', err);
     res.status(500).json({ error: err.message });
   }
 };
+
+
+//--------------------------------------------------------------------------------------------------------------
 
 // ✅ Delete
 exports.deleteDocumentsDetails = async (req, res) => {
@@ -164,6 +232,8 @@ exports.deleteDocumentsDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 exports.importDocumentFromExcel = async (req, res) => {
   try {

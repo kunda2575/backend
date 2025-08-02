@@ -10,7 +10,7 @@ const { ValidationError } = require('sequelize');
 // ✅ Create projectCredits
 exports.createProjectCredits = async (req, res) => {
     try {
-        const userId = req.userId;
+        const projectId = req.projectId;
         // if (!userId) return res.status(400).json({ error: "User ID is required." });
 
         const {
@@ -30,7 +30,7 @@ exports.createProjectCredits = async (req, res) => {
             purpose,
             amount_inr,
             payment_mode,
-            // userId
+            projectId
         });
 
         return res.status(201).json(newProjectCredits);
@@ -44,12 +44,8 @@ exports.createProjectCredits = async (req, res) => {
 };
 exports.getProjectCreditsDetails = async (req, res) => {
     try {
-        const userId = req.userId;
-        // console.log("Decoded JWT payload:", req.userId);  // Ensure userId is present
-
-        // if (!userId) {
-        //     return res.status(400).json({ error: "User ID is required." });
-        // }
+        const projectId = req.projectId;
+       
 
         const skip = parseInt(req.query.skip) || 0;
         const limit = parseInt(req.query.limit) || 10;
@@ -78,7 +74,7 @@ exports.getProjectCreditsDetails = async (req, res) => {
 
         console.log("Filters applied:", filters);
 
-    let whereClause = {};
+    let whereClause = {projectId};
     if (filters.length > 0) {
       whereClause = {
         [Op.and]: [{ [Op.or]: filters }]
@@ -211,7 +207,7 @@ exports.deleteProjectCredits = async (req, res) => {
 exports.importProjectCreditFromExcel = async (req, res) => {
   try {
     const projectCredits = req.body.projectCredits;
-
+const projectId = req.projectid
     if (!Array.isArray(projectCredits) || projectCredits.length === 0) {
       return res.status(400).json({ error: "No project credit records provided." });
     }
@@ -275,7 +271,8 @@ exports.importProjectCreditFromExcel = async (req, res) => {
           amount_inr: parseFloat(record.amount_inr),
           payment_mode: String(record.payment_mode).trim(),
           purpose: String(record.purpose).trim(),
-          deposit_bank: String(record.deposit_bank).trim()
+          deposit_bank: String(record.deposit_bank).trim(),
+          projectId
         });
       } else {
         errors.push(...rowErrors);

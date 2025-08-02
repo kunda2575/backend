@@ -1,25 +1,37 @@
 const { ValidationError } = require('sequelize');
 const PaymentMode = require('../../models/updateModels/paymentModeMasterSchema');
 
-// Create
+//--------------------------------------------------------------------------------------------------------------
+
+// ✅ Create
 exports.createPaymentMode = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
+    console.log("req.projectId",req.projectId)
     const { paymentMode } = req.body;
-    const newPaymentMode = await PaymentMode.create({ paymentMode});
+
+
+    const newPaymentMode = await PaymentMode.create({ paymentMode, projectId });
+
     res.status(201).json(newPaymentMode);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
+// ✅ Bulk Import
 exports.importPaymentModeData = async (req, res) => {
   try {
+    const projectId = req.projectId;
     const paymentModes = req.body.paymentmodes;
-console.log("payment mode",req.body.paymentModes)
+    console.log(paymentModes)
+
     if (!Array.isArray(paymentModes) || paymentModes.length === 0) {
-      return res.status(400).json({ error: "Nooo payment mode records provided." });
+      return res.status(400).json({ error: "No payment mode records provided." });
     }
+
     const requiredFields = ["paymentMode"];
     const errors = [];
     const cleanedModes = [];
@@ -28,11 +40,7 @@ console.log("payment mode",req.body.paymentModes)
       const rowErrors = [];
 
       requiredFields.forEach((field) => {
-        if (
-          record[field] === undefined ||
-          record[field] === null ||
-          String(record[field]).trim() === ""
-        ) {
+        if (!record[field] || String(record[field]).trim() === "") {
           rowErrors.push({
             row: index + 1,
             field,
@@ -43,7 +51,8 @@ console.log("payment mode",req.body.paymentModes)
 
       if (rowErrors.length === 0) {
         cleanedModes.push({
-          paymentMode: String(record.paymentMode).trim()
+          paymentMode: String(record.paymentMode).trim(),
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -77,45 +86,57 @@ console.log("payment mode",req.body.paymentModes)
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
 
-// Read all
+// ✅ Read
 exports.getPaymentModes = async (req, res) => {
   try {
-    const userId = req.userId;
-    const paymentMode = await PaymentMode.findAll();
-    res.json(paymentMode);
+    const projectId = req.projectId;
+    console.log("req.projectId",req.projectId)
+
+    const paymentModes = await PaymentMode.findAll({ where: { projectId } });
+
+    res.json(paymentModes);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Update
+//--------------------------------------------------------------------------------------------------------------
+
+// ✅ Update
 exports.updatePaymentMode = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { id } = req.params;
     const { paymentMode } = req.body;
-    const paymentModes = await PaymentMode.findOne({ where: {id} });
+
+    const paymentModes = await PaymentMode.findOne({ where: { id, projectId } });
+
     if (!paymentModes) return res.status(404).json({ error: "Payment Mode not found" });
 
-   
-    paymentModes.paymentMode=paymentMode
+    paymentModes.paymentMode = paymentMode;
     await paymentModes.save();
 
-    res.json(paymentMode);
+    res.json(paymentModes);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Delete
+//--------------------------------------------------------------------------------------------------------------
+
+// ✅ Delete
 exports.deletePaymentMode = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { id } = req.params;
-    const deleted = await PaymentMode.destroy({ where: { id } });
-    if (!deleted) return res.status(404).json({ error: "payment Mode not found" });
-    res.json({ message: "payment Mode deleted successfully" });
+
+    const deleted = await PaymentMode.destroy({ where: { id, projectId } });
+
+    if (!deleted) return res.status(404).json({ error: "Payment Mode not found" });
+
+    res.json({ message: "Payment Mode deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

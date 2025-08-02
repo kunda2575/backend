@@ -149,6 +149,10 @@ const Leads = sequelize.define(
         notEmpty: { msg: 'Reason for lost customers is required' },
       },
     },
+     projectId:{
+        type:DataTypes.INTEGER,
+        allowNull:false
+    }
   },
   {
     tableName: 'lead_transaction',

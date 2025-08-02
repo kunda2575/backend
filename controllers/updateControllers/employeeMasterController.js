@@ -17,8 +17,13 @@ const getR2FileUrl = (key) => `${PUBLIC_R2_BASE_URL}/${key}`;
 // ✅ Multer with memory storage for direct buffer access
 const storage = multer({ storage: multer.memoryStorage() });
 exports.upload = storage;
+
+//--------------------------------------------------------------------------------------------------------------
+
 exports.createEmployeeDetails = async (req, res) => {
   try {
+     const projectId = req.projectId;
+       const projectName = req.projectName;
     const {
       employeeID,
       employeeName,
@@ -63,11 +68,11 @@ exports.createEmployeeDetails = async (req, res) => {
       documentType: parsedDocTypes[i] || 'unknown'
     }));
 
-    const uploadedFiles = await uploadToR2(filesWithDocTypes, "employee_master", "employee_upload");
+    const uploadedFiles = await uploadToR2(projectName,filesWithDocTypes, "employee_master", "employee_upload");
   // const uploadedFiles = await uploadToR2(filesWithDocTypes, "documents_master", "system_upload");
-    const uploadedKeys = uploadedFiles.map(file => file.key);
-   
-    const idProof1 = uploadedKeys.join(',');
+  const uploadedUrls = uploadedFiles.map(file => file.url.replace(/^public_url\s*=\s*/, ''));
+const idProof1 = uploadedUrls.join(',');
+
 
     const newEmployee = await EmployeeMaster.create({
       employeeID,
@@ -78,7 +83,8 @@ exports.createEmployeeDetails = async (req, res) => {
       idProof1,
       employeeSalary,
       department,
-      emp_address
+      emp_address,
+      projectId
     });
 
     res.status(201).json(newEmployee);
@@ -92,11 +98,13 @@ exports.createEmployeeDetails = async (req, res) => {
 };
 
 
+//--------------------------------------------------------------------------------------------------------------
+
 
 exports.importEmployeeExcelData = async (req, res) => {
   try {
     const employees = req.body.employee;
-
+const projectId = req.projectId
     if (!Array.isArray(employees) || employees.length === 0) {
       return res.status(400).json({ error: "No employee records provided." });
     }
@@ -142,7 +150,8 @@ exports.importEmployeeExcelData = async (req, res) => {
           employeeSalary: Number(record.employeeSalary),
           department: String(record.department).trim(),
           emp_address: record.emp_address ? String(record.emp_address).trim() : null,
-          idProof1: null // No documents in Excel import
+          idProof1: null, // No documents in Excel import
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -200,10 +209,13 @@ exports.importEmployeeExcelData = async (req, res) => {
 };
 
 
-// ✅ Read
+//--------------------------------------------------------------------------------------------------------------
+
+//  Read
 exports.getEmployeeDetails = async (req, res) => {
   try {
-    const employeeDetails = await EmployeeMaster.findAll();
+     const projectId = req.projectId;
+    const employeeDetails = await EmployeeMaster.findAll({where:{projectId}});
 
     const updatedDetails = employeeDetails.map(emp => ({
       ...emp.toJSON(),
@@ -217,6 +229,8 @@ exports.getEmployeeDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 exports.updateEmployeesDetails = async (req, res) => {
   try {
@@ -236,16 +250,30 @@ exports.updateEmployeesDetails = async (req, res) => {
     const employee = await EmployeeMaster.findOne({ where: { id } });
     if (!employee) return res.status(404).json({ error: "Employee not found" });
 
+    // Parse retainedFiles JSON string or array
     let retainedKeys = [];
     try {
-      retainedKeys = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : [];
+      retainedKeys = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : retainedFiles || [];
     } catch (err) {
       return res.status(400).json({ error: 'Invalid retainedFiles format' });
     }
 
+    // Normalize retained keys to just keys (remove full URLs)
+    // Because keys are needed for deleteObjects call
+    // Remove the public URL prefix if present
     const oldKeys = employee.idProof1 ? employee.idProof1.split(',') : [];
-    const keysToDelete = oldKeys.filter(k => !retainedKeys.includes(k));
+    const keysToDelete = oldKeys.filter(k => {
+      // Normalize retainedKeys to keys to compare correctly
+      const normalizedRetained = retainedKeys.map(url => {
+        if (url.startsWith('http')) {
+          return url.replace(`${PUBLIC_R2_BASE_URL}/`, '');
+        }
+        return url;
+      });
+      return !normalizedRetained.includes(k);
+    });
 
+    // Delete removed files from R2 bucket
     if (keysToDelete.length > 0) {
       await s3.deleteObjects({
         Bucket: R2_BUCKET_NAME,
@@ -256,8 +284,10 @@ exports.updateEmployeesDetails = async (req, res) => {
       }).promise();
     }
 
-    const files = req.files || [];
-    let newUploadedKeys = [];
+    // Support files under req.files (assuming multer.any() or multer.array('documents'))
+    const files = Array.isArray(req.files) ? req.files : [];
+
+    let newUploadedUrls = [];
 
     if (files.length > 0) {
       let parsedDocTypes = [];
@@ -272,13 +302,20 @@ exports.updateEmployeesDetails = async (req, res) => {
         documentType: parsedDocTypes[i] || 'unknown'
       }));
 
-        const uploadedFiles = await uploadToR2(filesWithDocTypes, "employee_master_edit", "employee_edit");
+      // Call uploadToR2 with correct parameters (projectName can be added if needed)
+      const uploadedFiles = await uploadToR2('employee_master_edit', filesWithDocTypes, "employee_edit", "employee_edit");
+
     
-      newUploadedKeys = uploadedFiles.map(file => file.key); // 🔧 Extract keys only
+      newUploadedUrls = uploadedFiles.map(file => (file.url || '').replace(/^public_url\s*=\s*/, ''));
     }
 
-    const finalKeys = [...retainedKeys, ...newUploadedKeys];
+    // Normalize retained keys to full URLs (if any are just keys)
+    const normalizedRetainedUrls = retainedKeys.map(url => url.startsWith('http') ? url : `${PUBLIC_R2_BASE_URL}/${url}`);
 
+    // Final combined URLs
+    const finalUrls = [...normalizedRetainedUrls, ...newUploadedUrls];
+
+    // Update employee record
     employee.employeeName = employeeName;
     employee.employeePhone = employeePhone;
     employee.employeeEmail = employeeEmail;
@@ -286,7 +323,7 @@ exports.updateEmployeesDetails = async (req, res) => {
     employee.employeeSalary = employeeSalary;
     employee.department = department;
     employee.emp_address = emp_address;
-    employee.idProof1 = finalKeys.join(',');
+    employee.idProof1 = finalUrls.join(',');
 
     await employee.save();
     res.status(200).json(employee);
@@ -295,7 +332,10 @@ exports.updateEmployeesDetails = async (req, res) => {
   }
 };
 
-// ✅ Delete
+
+//--------------------------------------------------------------------------------------------------------------
+
+//  Delete
 exports.deleteEmployeesDetails = async (req, res) => {
   try {
     const { id } = req.params;

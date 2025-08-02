@@ -78,7 +78,7 @@ const inventoryEntry = sequelize.define('InventoryEntry', {
     },
   },
   invoice_attachment: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
     // Optional: Add file extension validation if needed
   },
@@ -89,6 +89,10 @@ const inventoryEntry = sequelize.define('InventoryEntry', {
       notEmpty: { msg: 'Entered by is required' },
     },
   },
+   projectId:{
+        type:DataTypes.INTEGER,
+        allowNull:false
+    }
 }, {
   tableName: 'inventory_entry',
   timestamps: true,

@@ -2,12 +2,12 @@ const express = require("express")
 const router = express.Router();
 
 const teamRoutes = require('../../controllers/updateControllers/teamMembersController');
-const verifyToken = require("../../middleware/verfiyToken");
+const projectFilter = require("../../middleware/projectId");
 
-router.post("/",verifyToken,teamRoutes.createTeamMemberDetails)
-router.post("/import",verifyToken,teamRoutes.importTeamMembersExcelData)
-router.get("/",verifyToken,teamRoutes.getTeamMemberDetails)
-router.put("/:id",verifyToken,teamRoutes.updateTeamMemberDetails)
-router.delete("/:id",verifyToken,teamRoutes.deleteTeamMemberDetails)
+router.post("/",projectFilter,teamRoutes.createTeamMemberDetails)
+router.post("/import",projectFilter,teamRoutes.importTeamMembersExcelData)
+router.get("/",projectFilter,teamRoutes.getTeamMemberDetails)
+router.put("/:id",projectFilter,teamRoutes.updateTeamMemberDetails)
+router.delete("/:id",projectFilter,teamRoutes.deleteTeamMemberDetails)
 
 module.exports=router

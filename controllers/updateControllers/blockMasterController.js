@@ -4,7 +4,7 @@ const { ValidationError } = require('sequelize');
 // Create
 exports.createBlock = async (req, res) => {
   try {
-    // const userId = req.userId;
+    // const projectId = req.projectId;
     const { blockNoOrName } = req.body;
     const newBlock = await BlocksMaster.create({ blockNoOrName });
     res.status(201).json(newBlock);
@@ -18,7 +18,7 @@ exports.createBlock = async (req, res) => {
 // Read all
 exports.getBlocks = async (req, res) => {
   try {
-    // const userId = req.userId;
+//  const projectId = req.projectId;
     const blocks = await BlocksMaster.findAll();
     res.json(blocks);
   } catch (err) {
@@ -68,6 +68,7 @@ exports.deleteBlock = async (req, res) => {
 
 exports.importBlockFromExcel = async (req, res) => {
   try {
+    // const projectId = req.projectId
     const blocks = req.body.block;
 
     if (!Array.isArray(blocks) || blocks.length === 0) {
@@ -101,6 +102,7 @@ exports.importBlockFromExcel = async (req, res) => {
       if (rowErrors.length === 0) {
         cleanedBlocks.push({
           blockNoOrName: String(record.blockNoOrName).trim(),
+          // projectId
           // No date fields included here
         });
       } else {

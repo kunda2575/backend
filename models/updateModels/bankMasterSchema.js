@@ -23,7 +23,7 @@ const BankMaster = sequelize.define(
     ifscCode: {
       type: DataTypes.STRING,
       allowNull: false,
-     
+
     },
     branch: {
       type: DataTypes.STRING,
@@ -31,7 +31,12 @@ const BankMaster = sequelize.define(
       validate: {
         notEmpty: { msg: 'Branch name is required' }
       }
-    }
+    },
+    // projectId: {
+    //   type: DataTypes.INTEGER,
+    //   allowNull: false,
+
+    // },
   },
   {
     tableName: 'bank_master',

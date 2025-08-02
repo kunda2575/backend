@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const bankMasterController = require('../../controllers/updateControllers/bankMasterController')
-const verifyToken = require('../../middleware/verfiyToken')
+const projectFilter = require('../../middleware/projectId')
 
-router.post('/',verifyToken, bankMasterController.createBankDetails);
+router.post('/',projectFilter, bankMasterController.createBankDetails);
 
-router.post('/import',verifyToken, bankMasterController.importBankFromExcel);
-router.get('/', verifyToken,bankMasterController.getBankDetails);
-router.put('/:id', verifyToken,bankMasterController.updateBankDetails);
-router.delete('/:id',verifyToken, bankMasterController.deleteBankDetails);
+router.post('/import',projectFilter, bankMasterController.importBankFromExcel);
+router.get('/', projectFilter,bankMasterController.getBankDetails);
+router.put('/:id', projectFilter,bankMasterController.updateBankDetails);
+router.delete('/:id',projectFilter, bankMasterController.deleteBankDetails);
 
 module.exports = router;
 

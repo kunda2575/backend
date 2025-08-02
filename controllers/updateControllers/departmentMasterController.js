@@ -1,34 +1,38 @@
 const { ValidationError } = require('sequelize');
 const DepartmentMaster = require("../../models/updateModels/departmentMasterSchema");
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Create 
 
 exports.createDepartmentDetails = async (req, res) => {
     try {
-        const userId = req.userId;
+        const projectId = req.projectId;
         const { departmentMaster, departmentID } = req.body;
-        const newDepartment = await DepartmentMaster.create({ departmentMaster, departmentID });
+        const newDepartment = await DepartmentMaster.create({ departmentMaster, departmentID,projectId });
         res.status(201).json(newDepartment);
-    } catch (error) {
-        if (err instanceof ValidationError) {
-            const messages = err.errors.map((e) => e.message);
-            return res.status(400).json({ error: messages.join(', ') });
-        }
-
-    }
+    } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+    // console.log(" customer master",err.message)
+  }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 //Read All
 
 exports.getDepartmentDetails = async (req, res) => {
     try {
-        const userId = req.userId;
-        const departments = await DepartmentMaster.findAll();
+        const projectId = req.projectId;
+        const departments = await DepartmentMaster.findAll({where:{projectId}});
         res.json(departments);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Update
 
@@ -50,6 +54,8 @@ exports.updateDepartmentDetails = async (req, res) => {
     }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Delete
 
 exports.deleteDepartmentDetails = async (req, res) => {
@@ -64,10 +70,12 @@ exports.deleteDepartmentDetails = async (req, res) => {
     }
 }
 
+//--------------------------------------------------------------------------------------------------------------
+
 exports.importDepartmentFromExcel = async (req, res) => {
     try {
         const departments = req.body.department;
-
+        const projectId = req.projectId
         if (!Array.isArray(departments) || departments.length === 0) {
             return res.status(400).json({ error: "No department records provided." });
         }
@@ -100,6 +108,7 @@ exports.importDepartmentFromExcel = async (req, res) => {
                 cleanedDepartments.push({
                     departmentMaster: String(record.departmentMaster).trim(),
                     departmentID: String(record.departmentID).trim(),
+                    projectId
                     // No date fields included here
                 });
             } else {

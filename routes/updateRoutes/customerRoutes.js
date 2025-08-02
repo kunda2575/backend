@@ -2,29 +2,29 @@ const express = require('express');
 const router = express.Router();
 const customerController = require('../../controllers/updateControllers/customerMasterController');
 const { uploadToR2 } = require('../../uploads/r2Uploader');
-const verifyToken = require('../../middleware/verfiyToken');
+const projectFilter = require('../../middleware/projectId');
 const multer = require('multer');
 
 const upload = multer(); // stores files in memory
 
 // ✅ Create customer with file upload
-// router.post('/', verifyToken, upload.array('documents'), customerController.createCustomerDetails);
-router.post('/', verifyToken, upload.any(), customerController.createCustomerDetails);
+// router.post('/', projectFilter, upload.array('documents'), customerController.createCustomerDetails);
+router.post('/', projectFilter, upload.any(), customerController.createCustomerDetails);
 
-router.post('/import', verifyToken, upload.any(), customerController.importCustomerFromExcel);
+router.post('/import', projectFilter, upload.any(), customerController.importCustomerFromExcel);
 
 
 // ✅ Read all customers
-router.get('/', verifyToken, customerController.getCustomerDetails);
+router.get('/', projectFilter, customerController.getCustomerDetails);
 
 // ✅ Read leads
 router.get('/lead', customerController.getLeadDetails);
 
 // ✅ Update customer with file re-upload (optional)
-router.put('/:customerId', verifyToken, upload.any(), customerController.updateCustomersDetails);
+router.put('/:customerId', projectFilter, upload.any(), customerController.updateCustomersDetails);
 
 // ✅ Delete customer
-router.delete('/:customerId', verifyToken, customerController.deleteCustomersDetails);
-router.get('/:customerId', verifyToken, customerController.getCustomerById);
+router.delete('/:customerId', projectFilter, customerController.deleteCustomersDetails);
+router.get('/:customerId', projectFilter, customerController.getCustomerById);
 
 module.exports = router;

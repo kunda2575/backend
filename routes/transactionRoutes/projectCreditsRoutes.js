@@ -1,41 +1,41 @@
 const express = require('express');
 const router = express.Router();
-const verifyToken = require('../../middleware/verfiyToken');
+const projectFiter = require('../../middleware/projectId');
 
 // Import controller functions
 const projectCredits = require('../../controllers/transactionControllers/projectCredits');
 
 // Create projectCredits
-router.post('/', verifyToken, projectCredits.createProjectCredits);
+router.post('/', projectFiter, projectCredits.createProjectCredits);
 
-router.post('/import', verifyToken, projectCredits.importProjectCreditFromExcel);
+router.post('/import', projectFiter, projectCredits.importProjectCreditFromExcel);
 
 // Get projectCredits master details
-router.get('/', verifyToken, projectCredits.getProjectCreditsDetails);
+router.get('/', projectFiter, projectCredits.getProjectCreditsDetails);
 
 
 // Get vendor master details
-router.get('/source',verifyToken,  projectCredits.getSourceDetails);
+router.get('/source',projectFiter,  projectCredits.getSourceDetails);
 
 // Get purpose master details
-router.get('/purpose', verifyToken, projectCredits.getPurposeDetails);
+router.get('/purpose', projectFiter, projectCredits.getPurposeDetails);
 
 // Get deposite bank master details
-router.get('/depositeBank', verifyToken, projectCredits.getDepositeBankDetails);
+router.get('/depositeBank', projectFiter, projectCredits.getDepositeBankDetails);
 
 // Get payment mode master details
-router.get('/paymentMode', verifyToken, projectCredits.getPaymentModeDetails);
+router.get('/paymentMode', projectFiter, projectCredits.getPaymentModeDetails);
 
 
 // Get projectCredits details with filtering and pagination
-router.get('/:id', verifyToken, projectCredits.getProjectCreditsById);
+router.get('/:id', projectFiter, projectCredits.getProjectCreditsById);
 
 
 // Update ProjectCredits (by ID)
-router.put('/:id', verifyToken, projectCredits.updateProjectCredits);
+router.put('/:id', projectFiter, projectCredits.updateProjectCredits);
 
 // Delete ProjectCredits (by ID)
-router.delete('/:id', verifyToken, projectCredits.deleteProjectCredits);
+router.delete('/:id', projectFiter, projectCredits.deleteProjectCredits);
 
 // Export the router
 module.exports = router;

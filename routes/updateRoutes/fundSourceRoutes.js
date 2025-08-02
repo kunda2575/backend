@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const fundSourceController = require('../../controllers/updateControllers/fundSourceController');
-const verifyToken = require('../../middleware/verfiyToken');
+const projectFilter = require('../../middleware/projectId');
 
-router.post('/', verifyToken,fundSourceController.createFundSource);
-router.post('/import', verifyToken,fundSourceController.importFundSourceData);
-router.get('/',verifyToken, fundSourceController.getFundSources);
-router.put('/:id', verifyToken,fundSourceController.updateFundSource);
-router.delete('/:id',verifyToken, fundSourceController.deleteFundSource);
+router.post('/', projectFilter,fundSourceController.createFundSource);
+router.post('/import', projectFilter,fundSourceController.importFundSourceData);
+router.get('/',projectFilter, fundSourceController.getFundSources);
+router.put('/:id', projectFilter,fundSourceController.updateFundSource);
+router.delete('/:id',projectFilter, fundSourceController.deleteFundSource);
 
 module.exports = router;

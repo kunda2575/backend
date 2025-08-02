@@ -15,16 +15,18 @@ const R2_ENDPOINT = process.env.R2_ENDPOINT;
 
 const PUBLIC_R2_BASE_URL = process.env.PUBLIC_R2_BASE_URL;
 
-// ✅ Correct URL builder
+//  Correct URL builder
 const getR2FileUrl = (key) => `${PUBLIC_R2_BASE_URL}/${key}`;
 
-// ✅ Multer memory storage for direct upload to R2
+//  Multer memory storage for direct upload to R2
 const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB limit
 
-// ✅ Create Inventory Entry
+//  Create Inventory Entry
 const createInventoryEntry = async (req, res) => {
   try {
+    const projectId = req.projectId;
+    const projectName = req.projectName || 'project';
     const {
       material_id,
       material_name,
@@ -38,28 +40,43 @@ const createInventoryEntry = async (req, res) => {
       documentTypes
     } = req.body;
 
-     const files = req.files || [];
+    // Normalize uploaded files
+    let files = Array.isArray(req.files)
+      ? req.files
+      : req.files && typeof req.files === 'object'
+        ? Object.values(req.files).flat()
+        : req.file
+          ? [req.file]
+          : [];
 
+    if (!files.length) {
+      return res.status(400).json({ error: "No files uploaded" });
+    }
+
+    // Parse documentTypes
     let parsedDocTypes = [];
     try {
-      parsedDocTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : [];
-    } catch (err) {
+      parsedDocTypes = typeof documentTypes === 'string'
+        ? JSON.parse(documentTypes)
+        : documentTypes || [];
+    } catch {
       return res.status(400).json({ error: 'Invalid documentTypes format' });
     }
 
-    const filesWithDocTypes = files.map((file, i) => ({
+    // Attach doc type info
+    const filesWithDocTypes = files.map((file, idx) => ({
       ...file,
-      documentType: parsedDocTypes[i] || 'unknown'
+      documentType: parsedDocTypes[idx] || 'invoice'
     }));
 
-   
-    const uploadedFiles = await uploadToR2(filesWithDocTypes, "inventory_docs", "invoice_upload");
-   
+    // Upload to R2
+    const uploadedFiles = await uploadToR2(projectName, filesWithDocTypes, "inventory_docs", "invoice_upload");
+    if (!Array.isArray(uploadedFiles)) throw new Error("Upload failed");
 
-    const uploadedKeys = uploadedFiles.map(file => file.key);
-    const invoiceAttachments = uploadedKeys.join(',');
+    const urls = uploadedFiles.map(file => (file.url || '').replace(/^public_url\s*=\s*/, '')); // ✅ full URLs instead of keys
 
-    const newEntry = await inventoryEntry.create({
+    // Save full URLs in DB
+    const entry = await inventoryEntry.create({
       material_id,
       material_name,
       vendor_name,
@@ -68,24 +85,35 @@ const createInventoryEntry = async (req, res) => {
       invoice_cost_incl_gst,
       unit_type,
       quantity_received,
-      invoice_attachment: invoiceAttachments,
-      entered_by
+      invoice_attachment: urls.join(','), // ✅ save full URL string
+      entered_by,
+      projectId
     });
 
-    res.status(201).json({ ...newEntry.toJSON(),
-      documentUrls: uploadedFiles.map(f => f.url)});
+    // Respond with same URLs for frontend
+    return res.status(201).json({
+      message: "Created successfully",
+      data: {
+        ...entry.toJSON(),
+        documentUrls: urls
+      }
+    });
   } catch (err) {
     if (err instanceof ValidationError) {
-      const messages = err.errors.map((e) => e.message);
+      const messages = err.errors.map(e => e.message);
       return res.status(400).json({ error: messages.join(', ') });
     }
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("createInventoryEntry error:", err);
+    return res.status(500).json({ error: err.message || "Server error" });
   }
 };
 
-// ✅ Get Inventory List
+
+
+//  Get Inventory List
 const getInventoryDetails = async (req, res) => {
   try {
+    const projectId = req.projectId
     const skip = parseInt(req.query.skip) || 0;
     const limit = parseInt(req.query.limit) || 10;
 
@@ -108,7 +136,7 @@ const getInventoryDetails = async (req, res) => {
       conditions.push({ vendor_name: req.query.vendorName });
     }
 
-    let whereClause = {};
+    let whereClause = { projectId };
     if (conditions.length > 0) {
       whereClause = { [Op.and]: [{ [Op.or]: conditions }] };
     }
@@ -128,8 +156,7 @@ const getInventoryDetails = async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch inventory details." });
   }
 };
-
-// ✅ Get Inventory By ID
+//  Get Inventory By ID
 const getInventoryById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -151,8 +178,6 @@ const getInventoryById = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
-
-// ✅ Update Inventory
 const updateInventory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -166,45 +191,74 @@ const updateInventory = async (req, res) => {
       unit_type,
       quantity_received,
       entered_by,
-       documentTypes,
-      retainedFiles // comma-separated stringified keys
+      documentTypes,
+      retainedFiles // array of full URLs or keys
     } = req.body;
 
     const inventory = await inventoryEntry.findOne({ where: { id } });
     if (!inventory) return res.status(404).json({ error: "Inventory not found" });
 
-    let retainedKeys = [];
+    // Normalize retained files (extract keys from URLs if needed)
+    let retainedUrls = [];
     try {
-      retainedKeys = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : [];
+      const parsed = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : retainedFiles || [];
+      retainedUrls = parsed.map(item =>
+        item.startsWith('http') ? item : `${PUBLIC_R2_BASE_URL}/${item}`
+      );
     } catch {
       return res.status(400).json({ error: 'Invalid retainedFiles format' });
     }
 
-    const oldKeys = inventory.invoice_attachment ? inventory.invoice_attachment.split(',') : [];
-    const keysToDelete = oldKeys.filter(key => !retainedKeys.includes(key));
+    const oldUrls = (inventory.invoice_attachment || '')
+      .split(',')
+      .filter(Boolean)
+      .map(keyOrUrl => keyOrUrl.startsWith('http') ? keyOrUrl : `${PUBLIC_R2_BASE_URL}/${keyOrUrl}`);
 
+    const oldKeys = oldUrls.map(url => url.replace(`${PUBLIC_R2_BASE_URL}/`, ''));
+    const retainedKeys = retainedUrls.map(url => url.replace(`${PUBLIC_R2_BASE_URL}/`, ''));
+
+    // Determine what to delete
+    const keysToDelete = oldKeys.filter(key => !retainedKeys.includes(key));
     if (keysToDelete.length > 0) {
       await s3.deleteObjects({
         Bucket: R2_BUCKET_NAME,
-        Delete: { Objects: keysToDelete.map(k => ({ Key: k })), Quiet: true }
+        Delete: {
+          Objects: keysToDelete.map(key => ({ Key: key })),
+          Quiet: true
+        }
       }).promise();
     }
 
+    // Handle new uploads
     const files = req.files || [];
-    let newKeys = [];
+    let newUploaded = [];
 
     if (files.length > 0) {
-  const filesWithDocTypes = files.map(file => ({
-    ...file,
-    documentType: 'invoice'
-  }));
+      let parsedDocTypes = [];
+      try {
+        parsedDocTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : [];
+      } catch {
+        return res.status(400).json({ error: 'Invalid documentTypes format' });
+      }
 
-  const uploaded = await uploadToR2(filesWithDocTypes, "inventory_docs_edit", "invoice_edit");
-  newKeys = uploaded.map(file => file.key); // ✅ Extract keys only
-}
+      const filesWithTypes = files.map((file, i) => ({
+        ...file,
+        documentType: parsedDocTypes[i] || 'invoice'
+      }));
 
+      newUploaded = await uploadToR2(
+        req.projectName || 'project',
+        filesWithTypes,
+        "inventory_docs_edit",
+        "invoice_edit"
+      );
+    }
 
-    const finalAttachments = [...retainedKeys, ...newKeys];
+    // Combine retained + newly uploaded full URLs
+    const allUrls = [
+      ...retainedUrls,
+      ...newUploaded.map(file =>  (file.url || '').replace(/^public_url\s*=\s*/, ''))
+    ];
 
     await inventory.update({
       material_id,
@@ -215,24 +269,26 @@ const updateInventory = async (req, res) => {
       invoice_cost_incl_gst,
       unit_type,
       quantity_received,
-      invoice_attachment: finalAttachments.join(','),
+      invoice_attachment: allUrls.join(','), // ✅ Store full URLs in DB
       entered_by
     });
 
-    
-return res.status(200).json({
-  message: "Inventory updated successfully.",
-  inventory: {
-    ...inventory.toJSON(),
-    invoice_attachment: finalAttachments.map(getR2FileUrl)
-  }
-});
+    return res.status(200).json({
+      message: "Inventory updated successfully.",
+      inventory: {
+        ...inventory.toJSON(),
+        invoice_attachment: allUrls
+      }
+    });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error('Error in updateInventory:', err);
+    return res.status(500).json({ error: err.message || 'Server error' });
   }
 };
 
-// ✅ Delete Inventory
+
+
+// Delete Inventory
 const deleteInventory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -268,6 +324,7 @@ function excelDateToJSDate(serial) {
 }
 const importInventoryFromExcel = async (req, res) => {
   try {
+    const projectId = req.projectId
     const inventoryItems = req.body.inventorys; // array of inventory records from frontend
 
     if (!Array.isArray(inventoryItems) || inventoryItems.length === 0) {
@@ -299,7 +356,7 @@ const importInventoryFromExcel = async (req, res) => {
       item.quantity_received = parseFloat(item.quantity_received) || 0;
 
       if (err.length > 0) errors.push(...err);
-      else cleanedData.push(item);
+      else cleanedData.push(item, projectId);
     });
 
     if (errors.length) return res.status(400).json({ message: "Validation errors", errors });
@@ -316,7 +373,7 @@ const importInventoryFromExcel = async (req, res) => {
 
 
 
-// ✅ Master APIs
+//  Master APIs
 const getMaterialMasterDetails = async (_, res) => {
   try {
     const materialDetails = await materialMaster.findAll();

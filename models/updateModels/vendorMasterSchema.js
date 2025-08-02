@@ -68,6 +68,10 @@ const vendorMaster = sequelize.define(
       validate: {
         notEmpty: { msg: 'City is required' }
       }
+    },
+    projectId:{
+      type:DataTypes.INTEGER,
+      allowNull:false
     }
   },
   {

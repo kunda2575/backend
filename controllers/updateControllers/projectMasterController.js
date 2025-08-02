@@ -50,10 +50,9 @@ exports.createProjectDetails = async (req, res) => {
       documentType: parsedDocTypes[i] || 'unknown'
     }));
 
-
-    const uploadedFiles = await uploadToR2(filesWithDocTypes, "project_master", "system_upload");
-    const uploadedKeys = uploadedFiles.map(file => file.key);
-    const projectBrouchers = uploadedKeys.join(',');
+    const uploadedFiles = await uploadToR2(projectName, filesWithDocTypes, "project_master", "project_upload");
+    const fullUrls = uploadedFiles.map(file => (file.url || '').replace(/^public_url\s*=\s*/, '')); // Full URLs only
+    const projectBrouchers = fullUrls.join(',');
 
     const newProjectDetails = await ProjectMaster.create({
       projectName,
@@ -74,6 +73,9 @@ exports.createProjectDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+
 
 // Converts Excel serial number to JS Date
 function excelDateToJSDate(serial) {
@@ -220,7 +222,7 @@ exports.getProjectDetails = async (req, res) => {
     const formatted = projectDetails.map(doc => ({
       ...doc.toJSON(),
       projectBrouchers: doc.projectBrouchers
-        ? doc.projectBrouchers.split(',').map(getR2FileUrl)
+        ? doc.projectBrouchers.split(',').map(url => url.trim())
         : []
     }));
 
@@ -242,38 +244,44 @@ exports.updateProjectsDetails = async (req, res) => {
       expectedStartDate,
       expectedEndDate,
       documentTypes,
-      retainedFiles // JSON stringified array of keys
+      retainedFiles
     } = req.body;
-
-    const files = req.files || [];
 
     const project = await ProjectMaster.findOne({ where: { id } });
     if (!project) return res.status(404).json({ error: "Project not found" });
 
-    // Parse retained file keys
-    let retainedFileKeys = [];
+    const files = req.files || [];
+
+    // Parse retained file URLs or keys
+    let retainedUrls = [];
     try {
-      retainedFileKeys = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : [];
+      retainedUrls = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : retainedFiles || [];
     } catch (err) {
       return res.status(400).json({ error: 'Invalid retainedFiles format' });
     }
 
-    const oldDocs = project.projectBrouchers ? project.projectBrouchers.split(',') : [];
-    const filesToDelete = oldDocs.filter(key => !retainedFileKeys.includes(key));
+    // Convert full URLs to keys for deletion
+    const oldUrls = project.projectBrouchers ? project.projectBrouchers.split(',') : [];
+    const urlsToDelete = oldUrls.filter(url => !retainedUrls.includes(url));
+    const keysToDelete = urlsToDelete.map(url =>
+      url.startsWith(PUBLIC_R2_BASE_URL)
+        ? url.replace(`${PUBLIC_R2_BASE_URL}/`, '')
+        : url
+    );
 
-    // Delete removed files from R2
-    if (filesToDelete.length > 0) {
+    // Delete unretained files
+    if (keysToDelete.length > 0) {
       await s3.deleteObjects({
         Bucket: R2_BUCKET_NAME,
         Delete: {
-          Objects: filesToDelete.map(key => ({ Key: key })),
+          Objects: keysToDelete.map(key => ({ Key: key })),
           Quiet: true
         }
       }).promise();
     }
 
     // Upload new files
-    let newUploadedKeys = [];
+    let newUploadedUrls = [];
     if (files.length > 0) {
       let parsedDocTypes = [];
       try {
@@ -287,21 +295,20 @@ exports.updateProjectsDetails = async (req, res) => {
         documentType: parsedDocTypes[i] || 'unknown'
       }));
 
-      const uploadedFiles = await uploadToR2(filesWithDocTypes, "project_master_edit", "system_edit");
-      newUploadedKeys = uploadedFiles.map(file => file.key); // 🔧 Extract keys only
-
+      const uploadedFiles = await uploadToR2(projectName, filesWithDocTypes, "project_master_edit", "project_edit");
+      newUploadedUrls = uploadedFiles.map(file => (file.url || '').replace(/^public_url\s*=\s*/, '')); // Use full URL
     }
 
-    const finalDocs = [...retainedFileKeys, ...newUploadedKeys];
+    const allUrls = [...retainedUrls, ...newUploadedUrls];
 
-    // Update project fields
+    // Update fields
     project.projectName = projectName;
     project.projectOwner = projectOwner;
     project.projectContact = projectContact;
     project.projectAddress = projectAddress;
     project.expectedStartDate = expectedStartDate;
     project.expectedEndDate = expectedEndDate;
-    project.projectBrouchers = finalDocs.join(',');
+    project.projectBrouchers = allUrls.join(',');
 
     await project.save();
     res.status(200).json(project);
@@ -309,6 +316,7 @@ exports.updateProjectsDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // ✅ Delete Project Details
 exports.deleteProjectsDetails = async (req, res) => {

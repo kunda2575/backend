@@ -3,9 +3,9 @@ const UnitType = require('../../models/updateModels/unitTypeSchema');
 // Create
 exports.createUnitType = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { unit } = req.body;
-    const newUnitType = await UnitType.create({ unit});
+    const newUnitType = await UnitType.create({ unit,projectId});
     res.status(201).json(newUnitType);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -15,7 +15,7 @@ exports.createUnitType = async (req, res) => {
 exports.importUnitTypesExcelData = async (req, res) => {
   try {
     const unitTypes = req.body.unittypes;
-
+const projectId = req.projectId
     if (!Array.isArray(unitTypes) || unitTypes.length === 0) {
       return res.status(400).json({ error: "No unit type records provided." });
     }
@@ -43,7 +43,8 @@ exports.importUnitTypesExcelData = async (req, res) => {
 
       if (rowErrors.length === 0) {
         cleanedUnitTypes.push({
-          unit: String(record.unit).trim()
+          unit: String(record.unit).trim(),
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -78,21 +79,25 @@ exports.importUnitTypesExcelData = async (req, res) => {
 };
 
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Read all
 exports.getUnitTypes = async (req, res) => {
   try {
-    const userId = req.userId;
-    const unitType = await UnitType.findAll();
+    const projectId = req.projectId;
+    const unitType = await UnitType.findAll({where:{projectId}});
     res.json(unitType);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Update
 exports.updateUnitType = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { id } = req.params;
     const { unit } = req.body;
     const unitTypes = await UnitType.findOne({ where: {id } });
@@ -108,10 +113,12 @@ exports.updateUnitType = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Delete
 exports.deleteUnitType = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { id } = req.params;
     const deleted = await UnitType.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ error: "Unit Types not found" });

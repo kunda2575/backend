@@ -33,7 +33,12 @@ const DepartmentMaster = sequelize.define(
           msg: 'Department ID must be between 2 and 50 characters'
         }
       }
-    }
+    },
+     projectId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+
+        },
   },
   {
     tableName: 'department_master',

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const verifyToken = require('../../middleware/verfiyToken');
+const projectFiter = require('../../middleware/projectId');
 
 const expenditure = require('../../controllers/transactionControllers/expenditure');
 
@@ -14,7 +14,7 @@ router.post(
     { name: 'payment_reference_files', maxCount: 5 },
     { name: 'payment_evidence_files', maxCount: 5 }
   ]),
-  verifyToken,
+  projectFiter,
   expenditure.createExpenditure
 );
 
@@ -27,32 +27,32 @@ router.post(
     { name: 'payment_reference_files', maxCount: 5 },
     { name: 'payment_evidence_files', maxCount: 5 }
   ]),
-  verifyToken,
+  projectFiter,
   expenditure.importExpenditureFromExcel
 );
 
 // Get expenditure master details
-router.get('/', verifyToken, expenditure.getExpenditureDetails);
+router.get('/', projectFiter, expenditure.getExpenditureDetails);
 
 // router.get('/', expenditureController.getAllExpenditures);
 
 
 // Get vendor master details
-router.get('/vendor',verifyToken,  expenditure.getVendorDetails);
+router.get('/vendor',projectFiter,  expenditure.getVendorDetails);
 
 // Get expense master details
-router.get('/expense', verifyToken, expenditure.getExpenseDetails);
+router.get('/expense', projectFiter, expenditure.getExpenseDetails);
 
 // Get payment mode master details
-router.get('/paymentMode', verifyToken, expenditure.getPaymentModeDetails);
+router.get('/paymentMode', projectFiter, expenditure.getPaymentModeDetails);
 
 // Get payment bank master details
-router.get('/paymentBank', verifyToken, expenditure.getPaymentBankDetails);
+router.get('/paymentBank', projectFiter, expenditure.getPaymentBankDetails);
 
 
 
 // Get expenditure details with filtering and pagination
-router.get('/:id', verifyToken, expenditure.getExpenditureById);
+router.get('/:id', projectFiter, expenditure.getExpenditureById);
 
 router.put(
   '/:id',
@@ -60,12 +60,12 @@ router.put(
     { name: 'payment_reference_files', maxCount: 5 },
     { name: 'payment_evidence_files', maxCount: 5 }
   ]),
-  verifyToken,
+  projectFiter,
   expenditure.updateExpenditure
 );
 
 // Delete Expenditure (by ID)
-router.delete('/:id', verifyToken, expenditure.deleteExpenditure);
+router.delete('/:id', projectFiter, expenditure.deleteExpenditure);
 
 // Export the router
 module.exports = router;

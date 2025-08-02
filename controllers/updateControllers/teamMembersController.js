@@ -2,13 +2,15 @@ const { ValidationError } = require('sequelize');
 
 const TeamMembers =require('../../models/updateModels/teamMembersSchema');
 
+//--------------------------------------------------------------------------------------------------------------
+
 // create
 exports.createTeamMemberDetails = async (req,res) =>{
     try {
-            const userId = req.userId;
+            const projectId = req.projectId;
         const{team_name,team_phone,team_email,team_address,team_designation}=req.body
         const newTeamMembersDetails =await TeamMembers.create({
-            team_name,team_phone,team_email,team_address,team_designation})
+            team_name,team_phone,team_email,team_address,team_designation,projectId})
         res.status(201).json(newTeamMembersDetails)
 
     } catch (err) {
@@ -20,10 +22,13 @@ exports.createTeamMemberDetails = async (req,res) =>{
     }
 }
 
+//--------------------------------------------------------------------------------------------------------------
+
 exports.importTeamMembersExcelData = async (req, res) => {
   try {
-    const teamMembers = req.body.teamMembers;
-
+    const teamMembers = req.body.teammembers;
+    console.log(teamMembers)
+const projectId = req.projectId
     if (!Array.isArray(teamMembers) || teamMembers.length === 0) {
       return res.status(400).json({ error: "No team member records provided." });
     }
@@ -56,6 +61,7 @@ exports.importTeamMembersExcelData = async (req, res) => {
           team_email: String(record.team_email).trim(),
           team_address: record.team_address ? String(record.team_address).trim() : null,
           team_designation: record.team_designation ? String(record.team_designation).trim() : null,
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -92,8 +98,8 @@ exports.importTeamMembersExcelData = async (req, res) => {
 // read
 exports.getTeamMemberDetails = async(req,res)=>{
  try {
-    const userId = req.userId;
-    const teamMemberDetails = await TeamMembers.findAll()
+    const projectId = req.projectId;
+    const teamMemberDetails = await TeamMembers.findAll({where:{projectId}})
     res.status(201).json(teamMemberDetails)
  } catch (err) {
     res.status(500).json({ error: err.message });
@@ -103,7 +109,7 @@ exports.getTeamMemberDetails = async(req,res)=>{
 // update
 exports.updateTeamMemberDetails = async (req,res)=>{
     try {
-            const userId = req.userId; 
+            const projectId = req.projectId; 
         const{id}=req.params;
         const{team_name,team_phone,team_email,team_address,team_designation}=req.body
        const teamMemberDetails =  await TeamMembers.findOne({ where: {id } })
@@ -126,7 +132,7 @@ exports.updateTeamMemberDetails = async (req,res)=>{
 
 exports.deleteTeamMemberDetails = async(req,res)=>{
     try {
-        const userId = req.userId;
+        const projectId = req.projectId;
         const {id}=req.params;
         const deleted = await TeamMembers.destroy({where:{id}})
         if (!deleted) return res.status(404).json({ error: "Team Member Details not found" });

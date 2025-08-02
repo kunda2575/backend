@@ -1,12 +1,14 @@
 const { ValidationError } = require('sequelize');
 const VendorMaster = require('../../models/updateModels/vendorMasterSchema');
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Create
 exports.createVendor = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const {vendorId, vendorName,services,phone,address ,city} = req.body;
-    const newVendor = await VendorMaster.create({vendorId, vendorName,services,phone,address ,city});
+    const newVendor = await VendorMaster.create({vendorId, vendorName,services,phone,address ,city,projectId});
     res.status(201).json(newVendor);
   } catch (err) {
      if (err instanceof ValidationError) {
@@ -17,10 +19,12 @@ exports.createVendor = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 exports.importVendorsExcelData = async (req, res) => {
   try {
     const vendors = req.body.vendors;
-
+    const projectId = req.projectId
     if (!Array.isArray(vendors) || vendors.length === 0) {
       return res.status(400).json({ error: "No vendor records provided." });
     }
@@ -53,7 +57,8 @@ exports.importVendorsExcelData = async (req, res) => {
           services: String(record.services).trim(),
           phone: String(record.phone).trim(),
           address: String(record.address).trim(),
-          city: record.city ? String(record.city).trim() : null
+          city: record.city ? String(record.city).trim() : null,
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -89,21 +94,25 @@ exports.importVendorsExcelData = async (req, res) => {
 };
 
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Read all
 exports.getVendors = async (req, res) => {
   try {
-    const userId = req.userId;
-    const vendors = await VendorMaster.findAll();
+    const projectId = req.projectId;
+    const vendors = await VendorMaster.findAll({where:{projectId}});
     res.json(vendors);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Update
 exports.updateVendor = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { id } = req.params;
     const {vendorId, vendorName,services,phone,address ,city } = req.body;
     const vendor = await VendorMaster.findOne({ where: {id } });
@@ -124,10 +133,12 @@ exports.updateVendor = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Delete
 exports.deleteVendor = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { id } = req.params;
     const deleted = await VendorMaster.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ error: "Vendor not found" });

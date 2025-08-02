@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const departmentController = require("../../controllers/updateControllers/departmentMasterController");
-const verifyToken = require("../../middleware/verfiyToken");
+const projectFilter = require("../../middleware/projectId");
 
 
-router.post("/",verifyToken, departmentController.createDepartmentDetails);
-router.post("/import",verifyToken, departmentController.importDepartmentFromExcel);
-router.get("/",verifyToken, departmentController.getDepartmentDetails);
-router.put("/:id",verifyToken, departmentController.updateDepartmentDetails);
-router.delete("/:id",verifyToken, departmentController.deleteDepartmentDetails)
+router.post("/",projectFilter, departmentController.createDepartmentDetails);
+router.post("/import",projectFilter, departmentController.importDepartmentFromExcel);
+router.get("/",projectFilter, departmentController.getDepartmentDetails);
+router.put("/:id",projectFilter, departmentController.updateDepartmentDetails);
+router.delete("/:id",projectFilter, departmentController.deleteDepartmentDetails)
 
 module.exports = router;

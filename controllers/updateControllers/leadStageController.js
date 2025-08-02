@@ -1,21 +1,26 @@
 
 const LeadStage = require('../../models/updateModels/leadStageSchema');
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Create
 exports.createLeadStage = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { leadStage } = req.body;
-    const newLeadStage = await LeadStage.create({ leadStage});
+    const newLeadStage = await LeadStage.create({ leadStage,projectId});
     res.status(201).json(newLeadStage);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
+
 exports.importLeadStageData = async (req, res) => {
   try {
     const stages = req.body.stages;
-
+const projectId = req.projectId
     if (!Array.isArray(stages) || stages.length === 0) {
       return res.status(400).json({ error: "No lead stage records provided." });
     }
@@ -41,7 +46,8 @@ exports.importLeadStageData = async (req, res) => {
 
       if (rowErrors.length === 0) {
         cleanedStages.push({
-          leadStage: String(record.leadStage).trim()
+          leadStage: String(record.leadStage).trim(),
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -76,16 +82,20 @@ exports.importLeadStageData = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Read all
 exports.getLeadStages = async (req, res) => {
   try {
-    const userId = req.userId;
-    const leadStage = await LeadStage.findAll();
+  const projectId = req.projectId;
+    const leadStage = await LeadStage.findAll({where:{projectId}});
     res.json(leadStage);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Update
 exports.updateLeadStage = async (req, res) => {
@@ -105,6 +115,8 @@ exports.updateLeadStage = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Delete
 exports.deleteLeadStage = async (req, res) => {

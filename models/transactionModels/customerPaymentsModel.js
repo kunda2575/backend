@@ -125,7 +125,7 @@ const CustomerPayments = sequelize.define('CustomerPayments', {
         allowNull: true
     },
     documents: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: true
     },
     flat_hand_over_date: {
@@ -149,6 +149,10 @@ const CustomerPayments = sequelize.define('CustomerPayments', {
             isInt: { msg: "No of BHK must be an integer" }
         }
     },
+    projectId:{
+        type:DataTypes.INTEGER,
+        allowNull:false
+    }
 }, {
     tableName: 'customer_payments',
     timestamps: true

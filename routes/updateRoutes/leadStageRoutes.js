@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const leadStageController = require('../../controllers/updateControllers/leadStageController');
-const verifyToken = require('../../middleware/verfiyToken');
+const projectFilter = require('../../middleware/projectId');
 
-router.post('/', verifyToken,leadStageController.createLeadStage);
-router.post('/import', verifyToken,leadStageController.importLeadStageData);
-router.get('/', verifyToken,leadStageController.getLeadStages);
-router.put('/:id', verifyToken,leadStageController.updateLeadStage);
-router.delete('/:id', verifyToken,leadStageController.deleteLeadStage);
+router.post('/', projectFilter,leadStageController.createLeadStage);
+router.post('/import', projectFilter,leadStageController.importLeadStageData);
+router.get('/', projectFilter,leadStageController.getLeadStages);
+router.put('/:id', projectFilter,leadStageController.updateLeadStage);
+router.delete('/:id', projectFilter,leadStageController.deleteLeadStage);
 
 module.exports = router;

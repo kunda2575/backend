@@ -1,44 +1,44 @@
 const express = require('express');
 const router = express.Router();
-const verifyToken = require('../../middleware/verfiyToken');
+const projectFiter = require('../../middleware/projectId');
 
 // Import controller functions
 const projectDebit = require('../../controllers/transactionControllers/projectdebit');
 
 // Create projectDebit
-router.post('/', verifyToken, projectDebit.createProjectDebit);
-router.post('/import', verifyToken, projectDebit.importProjectDebitFromExcel);
+router.post('/', projectFiter, projectDebit.createProjectDebit);
+router.post('/import', projectFiter, projectDebit.importProjectDebitFromExcel);
 
 // Get projectDebit master details
-router.get('/', verifyToken, projectDebit.getProjectDebitDetails);
+router.get('/', projectFiter, projectDebit.getProjectDebitDetails);
 
 
 
 // Get vendor master details
-router.get('/vendor',verifyToken,  projectDebit.getVendorDetails);
+router.get('/vendor',projectFiter,  projectDebit.getVendorDetails);
 
 
 // Get payment mode master details
-router.get('/paymentMode', verifyToken, projectDebit.getPaymentModeDetails);
+router.get('/paymentMode', projectFiter, projectDebit.getPaymentModeDetails);
 
 // Get payment bank master details
-router.get('/payTo', verifyToken, projectDebit.getPayTo);
+router.get('/payTo', projectFiter, projectDebit.getPayTo);
 
 
 // Get payment bank master details
-router.get('/paymentBank', verifyToken, projectDebit.getPaymentBankDetails);
+router.get('/paymentBank', projectFiter, projectDebit.getPaymentBankDetails);
 
 
 
 // Get projectDebit details with filtering and pagination
-router.get('/:id', verifyToken, projectDebit.getProjectDebitById);
+router.get('/:id', projectFiter, projectDebit.getProjectDebitById);
 
 
 // Update Expenditure (by ID)
-router.put('/:id', verifyToken, projectDebit.updateProjectDebit);
+router.put('/:id', projectFiter, projectDebit.updateProjectDebit);
 
 // Delete Expenditure (by ID)
-router.delete('/:id', verifyToken, projectDebit.deleteProjectDebit);
+router.delete('/:id', projectFiter, projectDebit.deleteProjectDebit);
 
 // Export the router
 module.exports = router;

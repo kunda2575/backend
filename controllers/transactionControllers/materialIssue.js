@@ -9,10 +9,8 @@ const { ValidationError } = require('sequelize');
 // ✅ Create MaterialIssue
 exports.createMaterialIssue = async (req, res) => {
   try {
-    const userId = req.userId;
-    // if (!userId) {
-    //   return res.status(400).json({ error: "User ID is required." });
-    // }
+    const projectId = req.projectId;
+    
 
     const {
       material_name,
@@ -30,6 +28,7 @@ exports.createMaterialIssue = async (req, res) => {
       issued_by,
       issued_to,
       issue_date,
+      projectId
     
     });
 
@@ -39,7 +38,6 @@ exports.createMaterialIssue = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
-const MaterialIssueModel = require('../../models/transactionModels/materialIssueModel'); // Adjust as needed
 
 // Excel serial date conversion
 function excelDateToJSDate(serial) {
@@ -49,7 +47,9 @@ function excelDateToJSDate(serial) {
 
 exports.importMaterialIssuesFromExcel = async (req, res) => {
   try {
+    const projectId = req.projectId
     const materials = req.body.materials;
+    console.log("materials  ",materials)
 
     if (!Array.isArray(materials) || materials.length === 0) {
       return res.status(400).json({ error: "No material issue records provided." });
@@ -69,6 +69,8 @@ exports.importMaterialIssuesFromExcel = async (req, res) => {
 
     materials.forEach((record, index) => {
       const rowErrors = [];
+
+      console.log(" erros in material import",rowErrors)
 
       // Validate required fields
       requiredFields.forEach(field => {
@@ -115,7 +117,8 @@ exports.importMaterialIssuesFromExcel = async (req, res) => {
           quantity_issued: parseFloat(record.quantity_issued) || 0,
           issued_by: String(record.issued_by).trim(),
           issued_to: String(record.issued_to).trim(),
-          issue_date: record.issue_date
+          issue_date: record.issue_date,
+          projectId
         });
       }
     });
@@ -146,7 +149,7 @@ exports.importMaterialIssuesFromExcel = async (req, res) => {
 
 exports.getMaterialIssuesDetails = async (req, res) => {
     try {
-        // const userId = req.userId;
+        const projectId = req.projectId;
         // console.log("Decoded JWT payload:", req.userId);  // Ensure userId is present
 
         // if (!userId) {
@@ -173,7 +176,7 @@ exports.getMaterialIssuesDetails = async (req, res) => {
         console.log("Filters applied:", filters);
 
       
-    let whereClause = {};
+    let whereClause = {projectId};
     if (filters.length > 0) {
       whereClause = {
         [Op.and]: [{ [Op.or]: filters }]
@@ -300,9 +303,7 @@ exports.getMaterialMasterDetails = async (req, res) => {
 // ✅ Get Unit Type Details (user-specific)
 exports.getUnitTypeDetails = async (req, res) => {
   const userId = req.userId;
-  // if (!userId) {
-  //   return res.status(400).json({ error: "User ID not found" });
-  // }
+ 
 
   try {
     const unitTypeDetails = await unitType.findAll();

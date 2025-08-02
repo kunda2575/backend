@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const vendorMaster = require('../../controllers/updateControllers/vendorMasterController');
-const verifyToken = require('../../middleware/verfiyToken');
+const projectFilter = require('../../middleware/projectId');
 
-router.post('/', verifyToken,vendorMaster.createVendor);
-router.post('/import', verifyToken,vendorMaster.importVendorsExcelData);
-router.get('/', verifyToken,vendorMaster.getVendors);
-router.put('/:id', verifyToken,vendorMaster.updateVendor);
-router.delete('/:id', verifyToken,vendorMaster.deleteVendor);
+router.post('/', projectFilter,vendorMaster.createVendor);
+router.post('/import', projectFilter,vendorMaster.importVendorsExcelData);
+router.get('/', projectFilter,vendorMaster.getVendors);
+router.put('/:id', projectFilter,vendorMaster.updateVendor);
+router.delete('/:id', projectFilter,vendorMaster.deleteVendor);
 
 module.exports = router;

@@ -10,8 +10,8 @@ const { ValidationError } = require('sequelize');
 // ✅ Create projectDebit
 exports.createProjectDebit = async (req, res) => {
     try {
-        const userId = req.userId;
-        if (!userId) return res.status(400).json({ error: "User ID is required." });
+        const projectId = req.projectId;
+      
 
         const {
             date,
@@ -33,7 +33,7 @@ exports.createProjectDebit = async (req, res) => {
             invoice_number,
             payment_mode,
             payment_bank,
-          
+          projectId
         
         });
 
@@ -45,12 +45,8 @@ exports.createProjectDebit = async (req, res) => {
 };
 exports.getProjectDebitDetails = async (req, res) => {
     try {
-        const userId = req.userId;
-        // console.log("Decoded JWT payload:", req.userId);  // Ensure userId is present
-
-        // if (!userId) {
-        //     return res.status(400).json({ error: "User ID is required." });
-        // }
+        const projectId = req.projectId;
+      
 
         const skip = parseInt(req.query.skip) || 0;
         const limit = parseInt(req.query.limit) || 10;
@@ -84,7 +80,7 @@ exports.getProjectDebitDetails = async (req, res) => {
         console.log("Filters applied:", filters);
 
        
-    let whereClause = {};
+    let whereClause = {projectId};
     if (filters.length > 0) {
       whereClause = {
         [Op.and]: [{ [Op.or]: filters }]
@@ -146,10 +142,7 @@ exports.updateProjectDebit = async (req, res) => {
     console.log("req.params.id:", req.params.id);
     console.log("req.body:", req.body);
 
-    // if (!req.user || !req.user.userId) {
-    //   return res.status(401).json({ error: "Unauthorized: Missing user information" });
-    // }
-    const userId = req.userId;
+   
     const { id } = req.params;
 
     // if (!/^\d+$/.test(id)) {
@@ -217,7 +210,7 @@ exports.deleteProjectDebit = async (req, res) => {
 exports.importProjectDebitFromExcel = async (req, res) => {
   try {
     const projectDebits = req.body.projectDebits;
-
+const projectId = req.projectId
     if (!Array.isArray(projectDebits) || projectDebits.length === 0) {
       return res.status(400).json({ error: "No project debit records provided." });
     }
@@ -280,7 +273,8 @@ exports.importProjectDebitFromExcel = async (req, res) => {
           amount_inr: parseFloat(record.amount_inr),
           invoice_number: String(record.invoice_number).trim(),
           payment_mode: String(record.payment_mode).trim(),
-          payment_bank: String(record.payment_bank).trim()
+          payment_bank: String(record.payment_bank).trim(),
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -313,9 +307,7 @@ exports.importProjectDebitFromExcel = async (req, res) => {
 // ✅ Get vendor details (user-specific)
 exports.getPayTo = async (req, res) => {
     try {
-        const userId = req.userId;
-        if (!userId) return res.status(400).json({ error: "User ID not found" });
-
+      
         const payedDetails = await PayedTo.findAll();
         res.json(payedDetails);
     } catch (err) {
@@ -324,9 +316,7 @@ exports.getPayTo = async (req, res) => {
 };
 exports.getVendorDetails = async (req, res) => {
     try {
-        const userId = req.userId;
-        if (!userId) return res.status(400).json({ error: "User ID not found" });
-
+      
         const vendorDetails = await Vendor.findAll();
         res.json(vendorDetails);
     } catch (err) {
@@ -337,9 +327,7 @@ exports.getVendorDetails = async (req, res) => {
 // ✅ Get expense details (user-specific)
 exports.getPayedToDetails = async (req, res) => {
     try {
-        const userId = req.userId;
-        if (!userId) return res.status(400).json({ error: "User ID not found" });
-
+        
         const expenseDetails = await PayedTo.findAll();
         res.json(expenseDetails);
     } catch (err) {
@@ -350,9 +338,7 @@ exports.getPayedToDetails = async (req, res) => {
 // ✅ Get payment mode details (user-specific)
 exports.getPaymentModeDetails = async (req, res) => {
     try {
-        const userId = req.userId;
-        if (!userId) return res.status(400).json({ error: "User ID not found" });
-
+       
         const paymentModeDetails = await PaymentMode.findAll();
         res.json(paymentModeDetails);
     } catch (err) {
@@ -363,9 +349,7 @@ exports.getPaymentModeDetails = async (req, res) => {
 // ✅ Get payment bank details (user-specific)
 exports.getPaymentBankDetails = async (req, res) => {
     try {
-        const userId = req.userId;
-        if (!userId) return res.status(400).json({ error: "User ID not found" });
-
+       
         const paymentBankDetails = await PaymentBank.findAll();
         res.json(paymentBankDetails);
     } catch (err) {

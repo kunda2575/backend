@@ -45,6 +45,10 @@ const Material = sequelize.define(
       validate: {
         isNumeric: { msg: 'Available stock must be a number' }
       }
+    },
+     projectId:{
+        type:DataTypes.INTEGER,
+        allowNull:false
     }
   },
   {

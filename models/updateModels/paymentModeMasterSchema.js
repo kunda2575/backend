@@ -11,11 +11,17 @@ const paymentModeMaster = sequelize.define(
             autoIncrement: true,
             primaryKey: true
         },
+        projectId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+           
+        },
+
         paymentMode: {
             type: DataTypes.STRING,
             allowNull: false
         },
-       
+
     },
     {
         tableName: 'payment_modes_masters',

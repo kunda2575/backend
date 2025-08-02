@@ -3,11 +3,12 @@ const router = express.Router();
 
 const paymentModeController = require('../../controllers/updateControllers/paymentModeMasterController');
 const verifyToken = require('../../middleware/verfiyToken');
+const projectFilter = require('../../middleware/projectId');
 
-router.post('/', verifyToken,paymentModeController.createPaymentMode);
-router.post('/import', verifyToken,paymentModeController.importPaymentModeData);
-router.get('/', verifyToken,paymentModeController.getPaymentModes);
-router.put('/:id', verifyToken,paymentModeController.updatePaymentMode);
-router.delete('/:id', verifyToken,paymentModeController.deletePaymentMode);
+router.post('/', projectFilter,paymentModeController.createPaymentMode);
+router.post('/import', projectFilter,paymentModeController.importPaymentModeData);
+router.get('/', projectFilter,paymentModeController.getPaymentModes);
+router.put('/:id', projectFilter,paymentModeController.updatePaymentMode);
+router.delete('/:id', projectFilter,paymentModeController.deletePaymentMode);
 
 module.exports = router;

@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const unitTypeController = require('../../controllers/updateControllers/unitTypeController');
-const verifyToken = require('../../middleware/verfiyToken');
+const projectFilter = require('../../middleware/projectId');
 
-router.post('/', verifyToken,unitTypeController.createUnitType);
-router.post('/import', verifyToken,unitTypeController.importUnitTypesExcelData);
-router.get('/', verifyToken,unitTypeController.getUnitTypes);
-router.put('/:id', verifyToken,unitTypeController.updateUnitType);
-router.delete('/:id', verifyToken,unitTypeController.deleteUnitType);
+router.post('/', projectFilter,unitTypeController.createUnitType);
+router.post('/import', projectFilter,unitTypeController.importUnitTypesExcelData);
+router.get('/', projectFilter,unitTypeController.getUnitTypes);
+router.put('/:id', projectFilter,unitTypeController.updateUnitType);
+router.delete('/:id', projectFilter,unitTypeController.deleteUnitType);
 
 module.exports = router;

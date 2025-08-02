@@ -33,7 +33,12 @@ const MaterialMaster = sequelize.define(
           msg: 'Material name must be between 2 and 100 characters'
         }
       }
-    }
+    },
+     projectId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+
+        },
   },
   {
     tableName: 'material_masters',

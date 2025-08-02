@@ -10,11 +10,15 @@ const documentsMaster = sequelize.define(
             primaryKey: true
         },
         documentsUpload: {
-            type: DataTypes.STRING,
+            type: DataTypes.TEXT,
             allowNull: false
         },
        
-       
+        projectId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+
+        },
     },
     {
         tableName: 'documents_master',

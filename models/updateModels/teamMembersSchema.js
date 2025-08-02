@@ -52,10 +52,7 @@ const teamMembers = sequelize.define(
       allowNull: false,
       validate: {
         notEmpty: { msg: 'Address is required' },
-        len: {
-          args: [10, 255],
-          msg: 'Address must be at least 10 characters'
-        }
+       
       }
     },
 
@@ -65,6 +62,10 @@ const teamMembers = sequelize.define(
       validate: {
         notEmpty: { msg: 'Designation is required' }
       }
+    },
+    projectId:{
+      type:DataTypes.INTEGER,
+      allowNull:false
     }
   },
   {

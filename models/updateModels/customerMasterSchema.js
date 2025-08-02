@@ -74,7 +74,12 @@ const CustomerMaster = sequelize.define(
     documents: {
       type: DataTypes.TEXT, // Stores JSON string of uploaded files
       allowNull: true // Allow empty or missing initially
-    }
+    },
+     projectId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+
+        },
   },
   {
     tableName: 'customer_masters',

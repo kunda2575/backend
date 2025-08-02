@@ -1,9 +1,11 @@
 const FundPurpose = require('../../models/updateModels/fundPurposeSchema');
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Create
 exports.createFundPurpose = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const projectId = req.projectId;
     const { fundPurpose } = req.body;
     const newFundPurpose = await FundPurpose.create({ fundPurpose});
     res.status(201).json(newFundPurpose);
@@ -12,10 +14,12 @@ exports.createFundPurpose = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 exports.importFundPurposeData = async (req, res) => {
   try {
     const purposes = req.body.purposes;
-
+// const projectId = req.projectId
     if (!Array.isArray(purposes) || purposes.length === 0) {
       return res.status(400).json({ error: "No fund purpose records provided." });
     }
@@ -41,7 +45,8 @@ exports.importFundPurposeData = async (req, res) => {
 
       if (rowErrors.length === 0) {
         cleanedPurposes.push({
-          fundPurpose: String(record.fundPurpose).trim()
+          fundPurpose: String(record.fundPurpose).trim(),
+          // projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -77,16 +82,20 @@ exports.importFundPurposeData = async (req, res) => {
 };
 
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Read all
 exports.getFundPurposes = async (req, res) => {
   try {
-    const userId = req.userId;
+    //  const projectId = req.projectId;
     const fundPurpose = await FundPurpose.findAll();
     res.json(fundPurpose);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Update
 exports.updateFundPurpose = async (req, res) => {
@@ -106,6 +115,8 @@ exports.updateFundPurpose = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Delete
 exports.deleteFundPurpose = async (req, res) => {

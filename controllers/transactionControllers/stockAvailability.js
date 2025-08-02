@@ -10,10 +10,8 @@ const { ValidationError } = require('sequelize');
 // Create Material
 exports.createMaterial = async (req, res) => {
   try {
-    const userId = req.userId;
-    if (!userId) {
-      return res.status(400).json({ error: "User ID is required." });
-    }
+    const projectId = req.projectId;
+   
 
     const { material_id, material_name, unit_type, available_stock } = req.body;
     if (!material_id || !material_name || !unit_type) {
@@ -25,7 +23,7 @@ exports.createMaterial = async (req, res) => {
       material_name,
       unit_type,
       available_stock,
-      
+      projectId
     });
 
     return res.status(201).json(newMaterial);
@@ -42,7 +40,7 @@ exports.createMaterial = async (req, res) => {
 
 exports.getMaterialDetails = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const skip = parseInt(req.query.skip) || 0;
     const limit = parseInt(req.query.limit) || 10;
 
@@ -60,8 +58,8 @@ exports.getMaterialDetails = async (req, res) => {
     if (req.query.unit) {
       filters.push({ unit_type: { [Op.in]: parseArray(req.query.unit) } });
     }
-
-    let whereClause = {};
+let whereClause = { projectId }
+  
     if (filters.length > 0) {
       whereClause = {
         [Op.and]: [{ [Op.or]: filters }]
@@ -153,9 +151,7 @@ exports.deleteMaterial = async (req, res) => {
 // Get Material Master Details (user-specific)
 exports.getMaterialMasterDetails = async (req, res) => {
   const userId = req.userId;
-  if (!userId) {
-    return res.status(400).json({ error: "User ID not found" });
-  }
+  
 
   try {
     const materialDetails = await materialMaster.findAll();
@@ -167,10 +163,7 @@ exports.getMaterialMasterDetails = async (req, res) => {
 
 // Get Unit Type Details (user-specific)
 exports.getUnitTypeDetails = async (req, res) => {
-  const userId = req.userId;
-  if (!userId) {
-    return res.status(400).json({ error: "User ID not found" });
-  }
+ 
 
   try {
     const unitTypeDetails = await unitType.findAll();
@@ -182,6 +175,7 @@ exports.getUnitTypeDetails = async (req, res) => {
 
 exports.importStockAvailabilityFromExcel = async (req, res) => {
   try {
+    const projectId = req.projectId
     const stockAvailabilityArray = req.body.stockAvailability;
 
     if (!Array.isArray(stockAvailabilityArray) || stockAvailabilityArray.length === 0) {
@@ -215,6 +209,7 @@ exports.importStockAvailabilityFromExcel = async (req, res) => {
           material_name: String(record.material_name).trim(),
           unit_type: String(record.unit_type).trim(),
           available_stock: Number(record.available_stock),
+          projectId
         });
       }
     });

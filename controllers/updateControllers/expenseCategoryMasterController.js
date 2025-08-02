@@ -1,21 +1,25 @@
 const ExpenseCategoryMaster = require('../../models/updateModels/expenseCategoryMasterSchema');
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Create
 exports.createExpenseCategory= async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { expenseCategory, expenseHead } = req.body;
-    const newExpenseCategory= await ExpenseCategoryMaster.create({ expenseCategory, expenseHead });
+    const newExpenseCategory= await ExpenseCategoryMaster.create({ expenseCategory, expenseHead ,projectId});
     res.status(201).json(newExpenseCategory);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 exports.importExpenseCategoryData = async (req, res) => {
   try {
-    const categories = req.body.category
-    ;
+    const categories = req.body.category;
+    const projectId = req.projectId
 
     if (!Array.isArray(categories) || categories.length === 0) {
       return res.status(400).json({ error: "No expense category records provided." });
@@ -46,7 +50,8 @@ exports.importExpenseCategoryData = async (req, res) => {
       if (rowErrors.length === 0) {
         cleanedCategories.push({
           expenseCategory: String(record.expenseCategory).trim(),
-          expenseHead: String(record.expenseHead).trim()
+          expenseHead: String(record.expenseHead).trim(),
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -83,16 +88,20 @@ exports.importExpenseCategoryData = async (req, res) => {
 };
 
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Read all
 exports.getExpenseCategorys = async (req, res) => {
   try {
-    const userId = req.userId;
-    const expenseCategorys = await ExpenseCategoryMaster.findAll();
+   const projectId = req.projectId;
+    const expenseCategorys = await ExpenseCategoryMaster.findAll({where:{projectId}});
     res.json(expenseCategorys);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Update
 exports.updateExpenseCategory= async (req, res) => {
@@ -112,6 +121,8 @@ exports.updateExpenseCategory= async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Delete
 exports.deleteExpenseCategory= async (req, res) => {

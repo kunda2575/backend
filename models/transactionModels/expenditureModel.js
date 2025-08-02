@@ -71,13 +71,17 @@ const Expenditure = sequelize.define('Expenditure', {
     },
   },
   payment_reference: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true, // if optional
   },
   payment_evidence: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
+   projectId:{
+        type:DataTypes.INTEGER,
+        allowNull:false
+    }
 }, {
   tableName: 'expenditure',
   timestamps: true,

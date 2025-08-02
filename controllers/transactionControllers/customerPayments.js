@@ -16,12 +16,14 @@ const R2_ENDPOINT = process.env.R2_ENDPOINT;
 
 const PUBLIC_R2_BASE_URL = process.env.PUBLIC_R2_BASE_URL;
 
-// ✅ Correct URL builder
+// Correct URL builder
 const getR2FileUrl = (key) => `${PUBLIC_R2_BASE_URL}/${key}`;
 
-// ✅ CREATE
+// CREATE
 exports.createcustomerPayments = async (req, res) => {
   try {
+    const projectId = req.projectId
+      const projectName = req.projectName;
     const {
       customer_id,
       customer_name,
@@ -63,8 +65,8 @@ exports.createcustomerPayments = async (req, res) => {
       documentType: parsedDocTypes[i] || 'unknown'
     }));
 
-    const uploadedFiles = await uploadToR2(filesWithDocTypes, "customer_Payments_master", customer_name);
-    const uploadedKeys = uploadedFiles.map(file => file.key);
+    const uploadedFiles = await uploadToR2(projectName,filesWithDocTypes, "customer_Payments_master", customer_name);
+    const uploadedKeys = uploadedFiles.map(file => file.url.replace(/^public_url\s*=\s*/, ''));
     const document = uploadedKeys.join(',');
 
     const newPayment = await customerPayment.create({
@@ -88,8 +90,10 @@ exports.createcustomerPayments = async (req, res) => {
       flat_hand_over_date,
       flat_area,
       no_of_bhk,
+      projectId
     });
 
+    console.log(newPayment)
     return res.status(201).json(newPayment);
   } catch (err) {
     if (err instanceof ValidationError) {
@@ -102,6 +106,7 @@ exports.createcustomerPayments = async (req, res) => {
 
 exports.importCustomerFromExcel = async (req, res) => {
   try {
+    const projectId = req.projectId
     const customers = req.body.customers;
 
     if (!Array.isArray(customers) || customers.length === 0) {
@@ -125,7 +130,7 @@ exports.importCustomerFromExcel = async (req, res) => {
     customers.forEach((record, index) => {
       const rowErrors = [];
 
-      // ✅ Check required fields
+      // Check required fields
       requiredFields.forEach((field) => {
         const value = record[field];
         if (value === undefined || value === null || String(value).trim() === "") {
@@ -137,7 +142,7 @@ exports.importCustomerFromExcel = async (req, res) => {
         }
       });
 
-      // ✅ Convert and validate date fields
+      // Convert and validate date fields
       dateFields.forEach((field) => {
         const value = record[field];
         let parsedDate = null;
@@ -185,10 +190,11 @@ exports.importCustomerFromExcel = async (req, res) => {
           payment_type: String(record.payment_type || '').trim(),
           verified_by: String(record.verified_by || '').trim(),
           funding_bank: String(record.funding_bank || '').trim(),
-          documents: String(record.documents || '').trim(),
+          // documents: String(record.documents || '').trim(),
           flat_hand_over_date: record.flat_hand_over_date || null,
           flat_area: String(record.flat_area || '').trim(),
-          no_of_bhk: parseInt(record.no_of_bhk) || 0
+          no_of_bhk: parseInt(record.no_of_bhk) || 0,
+          projectId
         });
       }
     });
@@ -217,11 +223,12 @@ exports.importCustomerFromExcel = async (req, res) => {
 };
 
 
-// ✅ GET ALL
 exports.getcustomerPaymentsDetails = async (req, res) => {
   try {
+    const projectId = req.projectId;
     const skip = parseInt(req.query.skip) || 0;
     const limit = parseInt(req.query.limit) || 10;
+
     const filters = [];
     const parseArray = (value) => (value ? value.split(',') : []);
 
@@ -230,7 +237,7 @@ exports.getcustomerPaymentsDetails = async (req, res) => {
     if (req.query.payment_mode) filters.push({ payment_mode: { [Op.in]: parseArray(req.query.payment_mode) } });
     if (req.query.funding_bank) filters.push({ funding_bank: { [Op.in]: parseArray(req.query.funding_bank) } });
 
-    let whereClause = {};
+    let whereClause = { projectId };
     if (filters.length > 0) {
       whereClause = {
         [Op.and]: [{ [Op.or]: filters }],
@@ -243,10 +250,33 @@ exports.getcustomerPaymentsDetails = async (req, res) => {
       limit: limit,
     });
 
-    const mapped = data.map((item) => ({
-      ...item.toJSON(),
-      documents: item.documents ? item.documents.split(',').map(getR2FileUrl) : [],
-    }));
+    // Clean and format R2 document URLs
+    const formatUrls = (urlString) => {
+      if (!urlString || typeof urlString !== 'string') return [];
+
+      return urlString
+        .split(',')
+        .map(u => u.trim())
+        .filter(Boolean)
+        .map(u => {
+          const clean = u.replace(/^public_url\s*=\s*/, '');
+          return clean.startsWith('http') ? clean : getR2FileUrl(clean);
+        });
+    };
+
+    const mapped = data.map((item) => {
+      const json = item.toJSON();
+
+      const documents = formatUrls(json.documents);
+
+      // Remove createdAt and updatedAt
+      const { createdAt, updatedAt, ...rest } = json;
+
+      return {
+        ...rest,
+        documents
+      };
+    });
 
     const count = await customerPayment.count({ where: whereClause });
 
@@ -256,7 +286,8 @@ exports.getcustomerPaymentsDetails = async (req, res) => {
   }
 };
 
-// ✅ GET BY ID
+
+//  GET BY ID
 exports.getcustomerPaymentsById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -274,8 +305,7 @@ exports.getcustomerPaymentsById = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
-
-// ✅ UPDATE
+// UPDATE
 exports.updatecustomerPayments = async (req, res) => {
   try {
     const { id } = req.params;
@@ -308,6 +338,7 @@ exports.updatecustomerPayments = async (req, res) => {
       return res.status(404).json({ error: 'Customer payment not found' });
     }
 
+    // Parse retained file keys (keys or full URLs)
     let retainedFileKeys = [];
     try {
       retainedFileKeys = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : [];
@@ -315,22 +346,39 @@ exports.updatecustomerPayments = async (req, res) => {
       return res.status(400).json({ error: 'Invalid retainedFiles format' });
     }
 
+    // Convert any retained full URLs to keys
+    retainedFileKeys = retainedFileKeys.map(item =>
+      item.startsWith('http') ? item.replace(`${PUBLIC_R2_BASE_URL}/`, '') : item
+    );
+
+    // Identify and delete removed files
     const oldDocs = customerPaymentsToUpdate.documents ? customerPaymentsToUpdate.documents.split(',') : [];
     const filesToDelete = oldDocs.filter((key) => !retainedFileKeys.includes(key));
 
     if (filesToDelete.length > 0) {
-      await s3
-        .deleteObjects({
-          Bucket: R2_BUCKET_NAME,
-          Delete: {
-            Objects: filesToDelete.map((key) => ({ Key: key })),
-            Quiet: true,
-          },
-        })
-        .promise();
+      await s3.deleteObjects({
+        Bucket: R2_BUCKET_NAME,
+        Delete: {
+          Objects: filesToDelete.map((key) => ({ Key: key })),
+          Quiet: true,
+        },
+      }).promise();
     }
 
-    const files = req.files || [];
+    // Normalize uploaded files from multer (works with .fields, .array, .single)
+    let files = [];
+
+    if (Array.isArray(req.files)) {
+      files = req.files;
+    } else if (typeof req.files === 'object' && req.files !== null) {
+      Object.values(req.files).forEach(fileGroup => {
+        files.push(...fileGroup);
+      });
+    } else if (req.file) {
+      files = [req.file];
+    }
+
+    // Upload new files
     let newUploadedKeys = [];
 
     if (files.length > 0) {
@@ -345,12 +393,15 @@ exports.updatecustomerPayments = async (req, res) => {
         ...file,
         documentType: parsedDocTypes[i] || 'unknown',
       }));
- const uploadedFiles = await uploadToR2(filesWithDocTypes, "customer_master_edit", "system_edit");
-      newUploadedKeys = uploadedFiles.map(file => file.key); 
+
+      const uploadedFiles = await uploadToR2("customer_payment", filesWithDocTypes, "customer_master_edit", "system_edit");
+      newUploadedKeys = uploadedFiles.map(file =>  (file.url || '').replace(/^public_url\s*=\s*/, '')); // Only store keys
     }
 
-    const finalDocs = [...retainedFileKeys, ...newUploadedKeys];
+    // Combine retained + new keys
+    const finalKeys = [...retainedFileKeys, ...newUploadedKeys];
 
+    // Update DB record
     await customerPaymentsToUpdate.update({
       customer_id,
       customer_name,
@@ -368,17 +419,17 @@ exports.updatecustomerPayments = async (req, res) => {
       payment_type,
       verified_by,
       funding_bank,
-      documents: finalDocs.join(','),
       flat_hand_over_date,
       flat_area,
       no_of_bhk,
+      documents: finalKeys.join(','),
     });
 
     return res.status(200).json({
       message: 'Customer payment updated successfully.',
       data: {
         ...customerPaymentsToUpdate.toJSON(),
-        documents: finalDocs.map(getR2FileUrl),
+        documents: finalKeys.map(key => `${PUBLIC_R2_BASE_URL}/${key}`), // return full URLs to frontend
       },
     });
   } catch (err) {
@@ -387,7 +438,8 @@ exports.updatecustomerPayments = async (req, res) => {
   }
 };
 
-// ✅ DELETE
+
+//  DELETE
 exports.deletecustomerPayments = async (req, res) => {
   try {
     const { id } = req.params;
@@ -416,7 +468,7 @@ exports.deletecustomerPayments = async (req, res) => {
   }
 };
 
-// ✅ Master dropdowns
+//  Master dropdowns
 exports.getpaymentTypeDetails = async (req, res) => {
   try {
     const data = await paymentType.findAll();

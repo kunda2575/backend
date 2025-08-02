@@ -1,21 +1,25 @@
 const LeadSource = require('../../models/updateModels/leadSourceSchema');
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Create
 exports.createLeadSource = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { leadSource } = req.body;
-    const newLeadSource = await LeadSource.create({ leadSource});
+    const newLeadSource = await LeadSource.create({ leadSource,projectId});
     res.status(201).json(newLeadSource);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 exports.importLeadSourceData = async (req, res) => {
   try {
     const sources = req.body.sources;
-
+const projectId = req.projectId
     if (!Array.isArray(sources) || sources.length === 0) {
       return res.status(400).json({ error: "No lead source records provided." });
     }
@@ -41,7 +45,8 @@ exports.importLeadSourceData = async (req, res) => {
 
       if (rowErrors.length === 0) {
         cleanedSources.push({
-          leadSource: String(record.leadSource).trim()
+          leadSource: String(record.leadSource).trim(),
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -77,16 +82,20 @@ exports.importLeadSourceData = async (req, res) => {
 };
 
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Read all
 exports.getLeadSources = async (req, res) => {
   try {
-    const userId = req.userId;
-    const leadSource = await LeadSource.findAll();
+   const projectId = req.projectId;
+    const leadSource = await LeadSource.findAll({where:{projectId}});
     res.json(leadSource);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Update
 exports.updateLeadSource = async (req, res) => {
@@ -106,6 +115,8 @@ exports.updateLeadSource = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Delete
 exports.deleteLeadSource = async (req, res) => {

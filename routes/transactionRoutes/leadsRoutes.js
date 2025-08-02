@@ -2,28 +2,28 @@ const express = require('express');
 const router = express.Router();
 
 const leadController = require("../../controllers/transactionControllers/leads")
-const verifyToken = require('../../middleware/verfiyToken')
+const projectFiter = require('../../middleware/projectId')
 
 
-router.post('/',verifyToken, leadController.createLeadsDetails);
+router.post('/',projectFiter, leadController.createLeadsDetails);
 
 
-router.post('/leads/import', leadController.importLeadsFromExcel); // ✅ new route
+router.post('/leads/import', projectFiter,leadController.importLeadsFromExcel); // ✅ new route
 
-router.get('/', verifyToken,leadController.getLeadDetails);
+router.get('/', projectFiter,leadController.getLeadDetails);
 
-router.get('/leadSource', verifyToken,leadController.getLeadSourceDetails);
-router.get('/leadStage', verifyToken,leadController.getLeadStageDetails);
-router.get('/teamMember', verifyToken,leadController.getTeamMemberDetails);
+router.get('/leadSource', projectFiter,leadController.getLeadSourceDetails);
+router.get('/leadStage', projectFiter,leadController.getLeadStageDetails);
+router.get('/teamMember', projectFiter,leadController.getTeamMemberDetails);
 
 // ✅ Get Material by ID (user-specific
-router.get('/:id', verifyToken,leadController.getLeadDetailsById);
+router.get('/:id', projectFiter,leadController.getLeadDetailsById);
 
 // ✅ Update Material (by ID)
-router.put('/:id', verifyToken, leadController.updateLeadDetails);
+router.put('/:id', projectFiter, leadController.updateLeadDetails);
 
 // ✅ Delete Material (by ID)
-router.delete('/:id', verifyToken, leadController.deleteLeadDetails);
+router.delete('/:id', projectFiter, leadController.deleteLeadDetails);
 
 
 

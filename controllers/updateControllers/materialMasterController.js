@@ -1,17 +1,19 @@
 const { ValidationError } = require('sequelize');
 const MaterialMaster = require('../../models/updateModels/materialMasterSchema');
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Create
 exports.createMaterialMaster = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { materialName, material_id } = req.body;
 
     if (!materialName || !material_id) {
       return res.status(400).json({ error: "Material name and ID are required." });
     }
 
-    const newMaterialMaster = await MaterialMaster.create({ material_id, materialName });
+    const newMaterialMaster = await MaterialMaster.create({ material_id, materialName ,projectId});
     res.status(201).json(newMaterialMaster);
   } catch (err) {
      if (err instanceof ValidationError) {
@@ -21,10 +23,13 @@ exports.createMaterialMaster = async (req, res) => {
    
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
+
 exports.importMaterialMasterData = async (req, res) => {
   try {
     const materials = req.body.materials;
-
+const projectId = req.projectId
     if (!Array.isArray(materials) || materials.length === 0) {
       return res.status(400).json({ error: "No material records provided." });
     }
@@ -53,7 +58,8 @@ exports.importMaterialMasterData = async (req, res) => {
       if (rowErrors.length === 0) {
         cleanedMaterials.push({
           material_id: String(record.material_id).trim(),
-          materialName: String(record.materialName).trim()
+          materialName: String(record.materialName).trim(),
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -87,17 +93,20 @@ exports.importMaterialMasterData = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
 
 // Read all
 exports.getMaterialMasters = async (req, res) => {
   try {
-    const userId = req.userId;
-    const materialName = await MaterialMaster.findAll();
+  const projectId = req.projectId;
+    const materialName = await MaterialMaster.findAll({where:{projectId}});
     res.json(materialName);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Update
 exports.updateMaterialMaster = async (req, res) => {
@@ -118,6 +127,8 @@ exports.updateMaterialMaster = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Delete
 exports.deleteMaterialMaster = async (req, res) => {

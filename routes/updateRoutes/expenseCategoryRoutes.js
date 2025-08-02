@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const expenseCategorysController = require('../../controllers/updateControllers/expenseCategoryMasterController');
-const verifyToken = require("../../middleware/verfiyToken");
+const projectFilter = require("../../middleware/projectId");
 
-router.post('/',verifyToken, expenseCategorysController.createExpenseCategory);
-router.post('/import',verifyToken, expenseCategorysController.importExpenseCategoryData);
-router.get('/', verifyToken,expenseCategorysController.getExpenseCategorys);
-router.put('/:id',verifyToken, expenseCategorysController.updateExpenseCategory);
-router.delete('/:id', verifyToken,expenseCategorysController.deleteExpenseCategory);
+router.post('/',projectFilter, expenseCategorysController.createExpenseCategory);
+router.post('/import',projectFilter, expenseCategorysController.importExpenseCategoryData);
+router.get('/', projectFilter,expenseCategorysController.getExpenseCategorys);
+router.put('/:id',projectFilter, expenseCategorysController.updateExpenseCategory);
+router.delete('/:id', projectFilter,expenseCategorysController.deleteExpenseCategory);
 
 module.exports = router;

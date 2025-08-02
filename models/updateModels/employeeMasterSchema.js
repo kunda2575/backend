@@ -59,16 +59,13 @@ const EmployeeMaster = sequelize.define(
         isEmail: { msg: 'Invalid email format' }
       }
     },
-    address: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
+   
     idType: {
       type: DataTypes.STRING,
       allowNull: true
     },
     idProof1: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: true
     },
     employeeSalary: {
@@ -89,7 +86,12 @@ const EmployeeMaster = sequelize.define(
     emp_address: {
       type: DataTypes.STRING,
       allowNull: true
-    }
+    },
+     projectId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+
+        },
   },
   {
     tableName: 'employee_masters',

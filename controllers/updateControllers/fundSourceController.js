@@ -1,9 +1,11 @@
 const FundSource = require('../../models/updateModels/fundSourceSchema');
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Create
 exports.createFundSource = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const projectId = req.projectId;
     const { fundSource } = req.body;
     const newFundSource = await FundSource.create({ fundSource});
     res.status(201).json(newFundSource);
@@ -12,10 +14,12 @@ exports.createFundSource = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 exports.importFundSourceData = async (req, res) => {
   try {
     const sources = req.body.source;
-
+// const projectId = req.projectId
     if (!Array.isArray(sources) || sources.length === 0) {
       return res.status(400).json({ error: "No fund source records provided." });
     }
@@ -41,7 +45,8 @@ exports.importFundSourceData = async (req, res) => {
 
       if (rowErrors.length === 0) {
         cleanedSources.push({
-          fundSource: String(record.fundSource).trim()
+          fundSource: String(record.fundSource).trim(),
+          // projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -77,16 +82,20 @@ exports.importFundSourceData = async (req, res) => {
 };
 
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Read all
 exports.getFundSources = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const projectId = req.projectId;
     const fundSource = await FundSource.findAll();
     res.json(fundSource);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Update
 exports.updateFundSource = async (req, res) => {
@@ -106,6 +115,8 @@ exports.updateFundSource = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Delete
 exports.deleteFundSource = async (req, res) => {

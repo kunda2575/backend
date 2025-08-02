@@ -4,7 +4,7 @@ const Roles = require('../../models/updateModels/rolesMasterSchema');
 // Create
 exports.createRoles = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const projectId = req.projectId;
     const { rolesName } = req.body;
     const newRoles = await Roles.create({ rolesName});
     res.status(201).json(newRoles);
@@ -16,7 +16,7 @@ exports.createRoles = async (req, res) => {
 exports.importRolesData = async (req, res) => {
   try {
     const roles = req.body.roles;
-
+//  const projectId = req.projectId;
     if (!Array.isArray(roles) || roles.length === 0) {
       return res.status(400).json({ error: "No roles records provided." });
     }
@@ -33,7 +33,8 @@ exports.importRolesData = async (req, res) => {
         });
       } else {
         cleanedRoles.push({
-          rolesName: String(record.rolesName).trim()
+          rolesName: String(record.rolesName).trim(),
+          // projectId
         });
       }
     });
@@ -68,7 +69,7 @@ exports.importRolesData = async (req, res) => {
 // Read all
 exports.getRoless = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const projectId = req.projectId;
     const rolesName = await Roles.findAll();
     res.json(rolesName);
   } catch (err) {
@@ -79,7 +80,7 @@ exports.getRoless = async (req, res) => {
 // Update
 exports.updateRoles = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { id } = req.params;
     const { rolesName } = req.body;
     const rolesNames = await Roles.findOne({ where: {id } });
@@ -98,7 +99,7 @@ exports.updateRoles = async (req, res) => {
 // Delete
 exports.deleteRoles = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { id } = req.params;
     const deleted = await Roles.destroy({ where: { id } });
     if (!deleted) return res.status(404).json({ error: "Roles not found" });

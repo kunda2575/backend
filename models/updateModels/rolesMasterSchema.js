@@ -13,7 +13,11 @@ const rolesMaster = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false
         },
-       
+        // projectId: {
+        //     type: DataTypes.INTEGER,
+        //     allowNull: false
+        // },
+
     },
     {
         tableName: 'roles_masters',

@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const leadReasonsController = require('../../controllers/updateControllers/lostReasonsController');
-const verifyToken = require('../../middleware/verfiyToken');
+const projectFilter = require('../../middleware/projectId');
 
-router.post('/', verifyToken,leadReasonsController.createLostReasons);
-router.post('/import', verifyToken,leadReasonsController.importLostReasonsData);
-router.get('/', verifyToken,leadReasonsController.getLostReasons);
-router.put('/:id', verifyToken,leadReasonsController.updateLostReasons);
-router.delete('/:id', verifyToken,leadReasonsController.deleteLostReasons);
+router.post('/', projectFilter,leadReasonsController.createLostReasons);
+router.post('/import', projectFilter,leadReasonsController.importLostReasonsData);
+router.get('/', projectFilter,leadReasonsController.getLostReasons);
+router.put('/:id', projectFilter,leadReasonsController.updateLostReasons);
+router.delete('/:id', projectFilter,leadReasonsController.deleteLostReasons);
 
 module.exports = router;

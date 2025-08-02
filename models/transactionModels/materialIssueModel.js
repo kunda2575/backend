@@ -60,6 +60,10 @@ const MaterialIssue = sequelize.define(
         notEmpty: { msg: 'Issue date is required' },
       },
     },
+     projectId:{
+        type:DataTypes.INTEGER,
+        allowNull:false
+    }
   },
   {
     tableName: 'material_issue',

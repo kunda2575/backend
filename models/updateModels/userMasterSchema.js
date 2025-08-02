@@ -73,6 +73,10 @@ const userMaster = sequelize.define(
             notEmpty: { msg: "Project name is required" }
         }
     },
+    // projectId:{
+    //   type:DataTypes.INTEGER,
+    //   allowNull:false
+    // }
   },
   {
     tableName: 'user_masters',

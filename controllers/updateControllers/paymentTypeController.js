@@ -1,23 +1,27 @@
 const { ValidationError } = require('sequelize');
 const PaymentType = require('../../models/updateModels/paymentTypeMasterSchema');
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Create
 exports.createPaymentType = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { paymentType } = req.body;
-    const newPaymentType = await PaymentType.create({ paymentType});
+    const newPaymentType = await PaymentType.create({ paymentType,projectId});
     res.status(201).json(newPaymentType);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 
 exports.importPaymentTypeData = async (req, res) => {
   try {
     const paymentTypes = req.body.paymenttypes;
-
+    const projectId = req.projectId
     if (!Array.isArray(paymentTypes) || paymentTypes.length === 0) {
       return res.status(400).json({ error: "No payment type records provided." });
     }
@@ -45,7 +49,8 @@ exports.importPaymentTypeData = async (req, res) => {
 
       if (rowErrors.length === 0) {
         cleanedTypes.push({
-          paymentType: String(record.paymentType).trim()
+          paymentType: String(record.paymentType).trim(),
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -79,17 +84,21 @@ exports.importPaymentTypeData = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 
 // Read all
 exports.getPaymentTypes = async (req, res) => {
   try {
-    const userId = req.userId;
-    const paymentType = await PaymentType.findAll();
+     const projectId = req.projectId;
+    const paymentType = await PaymentType.findAll({where:{projectId}});
     res.json(paymentType);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Update
 exports.updatePaymentType = async (req, res) => {
@@ -109,6 +118,8 @@ exports.updatePaymentType = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Delete
 exports.deletePaymentType = async (req, res) => {

@@ -13,6 +13,11 @@ const LeadStage = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false
         },
+         projectId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+
+        },
        
     },
     {

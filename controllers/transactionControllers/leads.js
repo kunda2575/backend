@@ -11,6 +11,7 @@ const { ValidationError } = require('sequelize');
 
 // ✅ Create Leads Details
 exports.createLeadsDetails = async (req, res) => {
+  const projectId = req.projectId
   try {
     const {
       contact_name,
@@ -48,6 +49,7 @@ exports.createLeadsDetails = async (req, res) => {
       next_interacted_date,
       remarks,
       reason_for_lost_customers,
+      projectId
     });
 
     // Send success response
@@ -68,6 +70,7 @@ exports.createLeadsDetails = async (req, res) => {
 // ✅ Read
 exports.getLeadDetails = async (req, res) => {
   try {
+    const projectId = req.projectId
     const skip = parseInt(req.query.skip) || 0;
     const limit = parseInt(req.query.limit) || null;
 
@@ -79,7 +82,7 @@ exports.getLeadDetails = async (req, res) => {
     if (req.query.leadSource) conditions.push({ lead_source: { [Op.in]: parseArray(req.query.leadSource) } });
     if (req.query.teamMember) conditions.push({ team_member: { [Op.in]: parseArray(req.query.teamMember) } });
 
-    let whereClause = {};
+    let whereClause = {projectId};
     if (conditions.length > 0) {
       whereClause = {
         [Op.and]: [{ [Op.or]: conditions }]
@@ -240,6 +243,11 @@ function excelDateToJSDate(serial) {
 exports.importLeadsFromExcel = async (req, res) => {
   try {
     const leadsArray = req.body.leads;
+    const projectId = req.projectId; // ✅ Extract projectId from middleware
+console.log("leads array",leadsArray)
+    if (!projectId) {
+      return res.status(400).json({ error: "Missing projectId in request." });
+    }
 
     if (!Array.isArray(leadsArray) || leadsArray.length === 0) {
       return res.status(400).json({ error: "No leads provided." });
@@ -259,7 +267,7 @@ exports.importLeadsFromExcel = async (req, res) => {
     leadsArray.forEach((record, index) => {
       let recordErrors = [];
 
-      // Trim required fields
+      // Validate and trim required fields
       requiredFields.forEach(field => {
         if (record[field]) {
           record[field] = String(record[field]).trim();
@@ -275,12 +283,9 @@ exports.importLeadsFromExcel = async (req, res) => {
         if (value !== undefined && value !== null) {
           let date;
 
-          // Detect Excel serial number (numeric)
           if (typeof value === 'number') {
             date = excelDateToJSDate(value);
-          }
-          // Try parsing DD-MM-YYYY
-          else if (typeof value === 'string') {
+          } else if (typeof value === 'string') {
             const parsed = moment(value, 'DD-MM-YYYY', true);
             if (parsed.isValid()) {
               date = parsed.toDate();
@@ -309,7 +314,10 @@ exports.importLeadsFromExcel = async (req, res) => {
       if (recordErrors.length > 0) {
         errors.push(...recordErrors);
       } else {
-        cleanedLeads.push(record);
+        cleanedLeads.push({
+          ...record,
+          projectId // ✅ Inject projectId into each record
+        });
       }
     });
 
@@ -338,7 +346,8 @@ exports.importLeadsFromExcel = async (req, res) => {
       return res.status(400).json({ error: messages.join(', ') });
     }
 
- return res.status(500).json({ error: err.stack || err.message || "Internal server error during import." });
-
+    return res.status(500).json({
+      error: err.stack || err.message || "Internal server error during import."
+    });
   }
 };

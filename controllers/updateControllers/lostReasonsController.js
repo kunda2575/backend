@@ -1,20 +1,25 @@
 const LostReasons = require('../../models/updateModels/lostReasonsSchema');
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Create
 exports.createLostReasons = async (req, res) => {
   try {
-    const userId = req.userId;
+    const projectId = req.projectId;
     const { lostReason } = req.body;
-    const newLostReasons = await LostReasons.create({ lostReason});
+    const newLostReasons = await LostReasons.create({ lostReason,projectId});
     res.status(201).json(newLostReasons);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
+
 exports.importLostReasonsData = async (req, res) => {
   try {
     const reasons = req.body.reasons;
-
+const projectId = req.projectId
     if (!Array.isArray(reasons) || reasons.length === 0) {
       return res.status(400).json({ error: "No lost reason records provided." });
     }
@@ -40,7 +45,8 @@ exports.importLostReasonsData = async (req, res) => {
 
       if (rowErrors.length === 0) {
         cleanedReasons.push({
-          lostReason: String(record.lostReason).trim()
+          lostReason: String(record.lostReason).trim(),
+          projectId
         });
       } else {
         errors.push(...rowErrors);
@@ -75,16 +81,20 @@ exports.importLostReasonsData = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Read all
 exports.getLostReasons = async (req, res) => {
   try {
-    const userId = req.userId;
-    const lostReason = await LostReasons.findAll();
+   const projectId = req.projectId;
+    const lostReason = await LostReasons.findAll({where:{projectId}});
     res.json(lostReason);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Update
 exports.updateLostReasons = async (req, res) => {
@@ -104,6 +114,8 @@ exports.updateLostReasons = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Delete
 exports.deleteLostReasons = async (req, res) => {

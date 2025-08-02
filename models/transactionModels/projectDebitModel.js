@@ -68,7 +68,11 @@ const ProjectDebit = sequelize.define('ProjectDebit', {
     validate: {
       notEmpty: { msg: 'Payment bank is required' }
     }
-  }
+  },
+   projectId:{
+        type:DataTypes.INTEGER,
+        allowNull:false
+    }
 }, {
   tableName: 'project_debits',
   timestamps: true

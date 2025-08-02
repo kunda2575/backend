@@ -20,6 +20,8 @@ const getR2FileUrl = (key) => `${PUBLIC_R2_BASE_URL}/${key}`;
 // ✅ Create
 const createExpenditure = async (req, res) => {
   try {
+    const projectId = req.projectId
+      const projectName = req.projectName;
     const {
       date, vendor_name, expense_head, amount_inr,
       invoice_number, payment_mode, payment_bank,
@@ -47,10 +49,11 @@ const createExpenditure = async (req, res) => {
     const allFiles1 = [...paymentEvidenceFiles];
 
     // Upload to R2
-    const uploaded = await uploadToR2(allFiles, 'payment_reference', vendor_name);
-    const uploadedKeys = uploaded.map(f => f.key).join(',');
-    const uploaded1 = await uploadToR2(allFiles1, 'payment_evidence', vendor_name);
-    const uploadedKeys1 = uploaded1.map(f => f.key).join(',');
+    const uploaded = await uploadToR2(projectName,allFiles, 'payment_reference', vendor_name);
+    const uploaded1 = await uploadToR2(projectName,allFiles1, 'payment_evidence', vendor_name);
+    // 👇 Convert array to comma-separated string
+    const uploadedKeys = uploaded.map(f => f.url.replace(/^public_url\s*=\s*/, '')).join(',');
+    const uploadedKeys1 = uploaded1.map(f => f.url.replace(/^public_url\s*=\s*/, '')).join(',');
 
     // Create Expenditure record
     const record = await Expenditure.create({
@@ -63,6 +66,7 @@ const createExpenditure = async (req, res) => {
       payment_bank,
       payment_reference: uploadedKeys,
       payment_evidence: uploadedKeys1,
+      projectId
     });
 
     console.log("uploaded data", record);
@@ -76,10 +80,9 @@ const createExpenditure = async (req, res) => {
   }
 };
 
-
-// ✅ Get All (with filters)
 const getExpenditureDetails = async (req, res) => {
   try {
+    const projectId = req.projectId;
     const skip = parseInt(req.query.skip) || 0;
     const limit = parseInt(req.query.limit) || 10;
     const parseArr = v => v ? v.split(',') : [];
@@ -91,32 +94,54 @@ const getExpenditureDetails = async (req, res) => {
       req.query.payment_bank && { payment_bank: { [Op.in]: parseArr(req.query.payment_bank) } }
     ].filter(Boolean);
 
-    const whereClause = filters.length
-      ? { [Op.and]: [{ [Op.or]: filters }] }
-      : {};
+    let whereClause = { projectId };
+
+    if (filters.length) {
+      whereClause = {
+        [Op.and]: [
+          { projectId },
+          { [Op.or]: filters }
+        ]
+      };
+    }
 
     const data = await Expenditure.findAll({ where: whereClause, offset: skip, limit });
     const count = await Expenditure.count({ where: whereClause });
 
     const formatted = data.map(item => {
       const json = item.toJSON();
+
+      const formatUrls = (urls) => {
+        if (!urls || typeof urls !== 'string') return [];
+
+        return urls
+          .split(',')
+          .map(u => u.trim())
+          .filter(Boolean)
+          .map(url => url.startsWith('http') ? url : getR2FileUrl(url));
+      };
+
+      // Destructure to exclude createdAt and updatedAt
+      const { createdAt, updatedAt, ...rest } = json;
+
       return {
-        ...json,
-        payment_reference: json.payment_reference
-          ? json.payment_reference.split(',').map(getR2FileUrl)
-          : [],
-        payment_evidence: json.payment_evidence
-          ? json.payment_evidence.split(',').map(getR2FileUrl)
-          : []
+        ...rest,
+        payment_reference: formatUrls(json.payment_reference),
+        payment_evidence: formatUrls(json.payment_evidence)
       };
     });
 
-    res.json({ expenditureDetails: formatted, expenditureDetailsCount: count });
+    res.json({
+      expenditureDetails: formatted,
+      expenditureDetailsCount: count
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch details." });
   }
 };
+
+
 
 // ✅ Get by ID
 const getExpenditureById = async (req, res) => {
@@ -144,6 +169,7 @@ const getExpenditureById = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
 const updateExpenditure = async (req, res) => {
   try {
     const { id } = req.params;
@@ -154,6 +180,8 @@ const updateExpenditure = async (req, res) => {
 
     const documentTypes = JSON.parse(req.body.documentTypes || '[]');
     const documentTypes1 = JSON.parse(req.body.documentTypes1 || '[]');
+    const projectName = req.projectName;
+    const vendorName = req.body.vendor_name;
 
     // === Payment Reference Files ===
     const refFiles = (fileFields.payment_reference_files || []).map((file, i) => ({
@@ -162,10 +190,10 @@ const updateExpenditure = async (req, res) => {
     }));
 
     let paymentReferenceKeys = (existing.payment_reference || '').split(',').filter(Boolean);
-    if (refFiles.length) {
-      refFiles.forEach(f => deleteFromR2(f.key)); // cleanup old
-      const uploadedRefs = await uploadToR2(refFiles, 'payment_reference', req.body.vendor_name);
-      paymentReferenceKeys = uploadedRefs.map(f => f.key);
+
+    if (refFiles.length > 0) {
+      const uploadedRefs = await uploadToR2(projectName, refFiles, 'payment_reference', vendorName);
+      paymentReferenceKeys = uploadedRefs.map(f => f.url.replace(/^public_url\s*=\s*/, ''));
     }
 
     // === Payment Evidence Files ===
@@ -175,15 +203,15 @@ const updateExpenditure = async (req, res) => {
     }));
 
     let paymentEvidenceKeys = (existing.payment_evidence || '').split(',').filter(Boolean);
-    if (evdFiles.length) {
-      evdFiles.forEach(f => deleteFromR2(f.key));
-      const uploadedEvd = await uploadToR2(evdFiles, 'payment_evidence', req.body.vendor_name);
-      paymentEvidenceKeys = uploadedEvd.map(f => f.key);
+
+    if (evdFiles.length > 0) {
+      const uploadedEvd = await uploadToR2(projectName, evdFiles, 'payment_evidence', vendorName);
+      paymentEvidenceKeys = uploadedEvd.map(f => f.url.replace(/^public_url\s*=\s*/, ''));
     }
 
     await existing.update({
       date: req.body.date,
-      vendor_name: req.body.vendor_name,
+      vendor_name: vendorName,
       expense_head: req.body.expense_head,
       amount_inr: req.body.amount_inr,
       invoice_number: req.body.invoice_number,
@@ -193,12 +221,13 @@ const updateExpenditure = async (req, res) => {
       payment_evidence: paymentEvidenceKeys.join(',')
     });
 
-    return res.json({ message: "Updated", data: existing });
+    return res.json({ message: "Updated successfully", data: existing });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
+
 const deleteExpenditure = async (req, res) => {
   try {
     const { id } = req.params;
@@ -232,6 +261,7 @@ function excelDateToJSDate(serial) {
 
 const importExpenditureFromExcel = async (req, res) => {
   try {
+    const projectId = req.projectId
     const expenditures = req.body.expenditures;
 
     if (!Array.isArray(expenditures) || expenditures.length === 0) {
@@ -270,7 +300,7 @@ const importExpenditureFromExcel = async (req, res) => {
         }
       });
 
-     
+
       // ✅ Validate and format date
       let parsedDate = null;
       if (record.date !== undefined && record.date !== null) {
@@ -302,8 +332,9 @@ const importExpenditureFromExcel = async (req, res) => {
           invoice_number: String(record.invoice_number).trim(),
           payment_mode: String(record.payment_mode).trim(),
           payment_bank: String(record.payment_bank).trim(),
-          payment_reference: String(record.payment_reference).trim(),
-          payment_evidence: record.payment_evidence ? String(record.payment_evidence).trim() : null
+          // payment_reference: String(record.payment_reference).trim(),
+          // payment_evidence: record.payment_evidence ? String(record.payment_evidence).trim() : null,
+          projectId
         });
       } else {
         errors.push(...rowErrors);

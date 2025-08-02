@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const materialMasterController = require('../../controllers/updateControllers/materialMasterController');
-const verifyToken = require('../../middleware/verfiyToken');
+const projectFilter = require('../../middleware/projectId');
 
-router.post('/', verifyToken,materialMasterController.createMaterialMaster);
-router.post('/import', verifyToken,materialMasterController.importMaterialMasterData);
-router.get('/', verifyToken,materialMasterController.getMaterialMasters);
-router.put('/:id', verifyToken,materialMasterController.updateMaterialMaster);
-router.delete('/:id', verifyToken,materialMasterController.deleteMaterialMaster);
+router.post('/', projectFilter,materialMasterController.createMaterialMaster);
+router.post('/import', projectFilter,materialMasterController.importMaterialMasterData);
+router.get('/', projectFilter,materialMasterController.getMaterialMasters);
+router.put('/:id', projectFilter,materialMasterController.updateMaterialMaster);
+router.delete('/:id', projectFilter,materialMasterController.deleteMaterialMaster);
 
 module.exports = router;

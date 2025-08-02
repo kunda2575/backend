@@ -11,9 +11,14 @@ const PUBLIC_R2_BASE_URL = process.env.PUBLIC_R2_BASE_URL;
 // ✅ Correct URL builder
 const getR2FileUrl = (key) => `${PUBLIC_R2_BASE_URL}/${key}`;
 
+//--------------------------------------------------------------------------------------------------------------
+
 // ✅ Create
 exports.createCustomerDetails = async (req, res) => {
   try {
+    const projectId = req.projectId;
+    const projectName = req.projectName;
+
     const {
       customerName,
       customerPhone,
@@ -31,7 +36,13 @@ exports.createCustomerDetails = async (req, res) => {
       return res.status(400).json({ error: 'Required fields missing' });
     }
 
-    const files = req.files || [];
+    // ✅ Handle files array correctly
+    let files = [];
+    if (Array.isArray(req.files)) {
+      files = req.files;
+    } else if (typeof req.files === 'object' && req.files !== null) {
+      files = Object.values(req.files).flat();
+    }
 
     let parsedDocTypes = [];
     try {
@@ -45,8 +56,9 @@ exports.createCustomerDetails = async (req, res) => {
       documentType: parsedDocTypes[i] || 'unknown'
     }));
 
-    const uploadedFiles = await uploadToR2(filesWithDocTypes, "customer_master", customerName);
-    const documents = uploadedFiles.map(f => f.key).join(',');
+    const uploadedFiles = await uploadToR2(projectName, filesWithDocTypes, "customer_master", customerName);
+
+    const documents = uploadedFiles.map(f =>f.url.replace(/^public_url\s*=\s*/, '')).join(',');
 
     const newCustomer = await CustomerMaster.create({
       customerName,
@@ -58,23 +70,29 @@ exports.createCustomerDetails = async (req, res) => {
       customerNo,
       flatNo,
       blockNo,
-      documents
+      documents,
+      projectId
     });
 
     res.status(201).json({
       ...newCustomer.toJSON(),
       documentUrls: uploadedFiles.map(f => f.url)
     });
+
   } catch (err) {
-    console.error(err);
+    console.error("Customer creation error:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
+
+//--------------------------------------------------------------------------------------------------------------
+
 // ✅ Read all
 exports.getCustomerDetails = async (req, res) => {
   try {
-    const customers = await CustomerMaster.findAll();
+    const projectId = req.projectId;
+    const customers = await CustomerMaster.findAll({ where: { projectId } });
 
     const formatted = customers.map(cus => {
       const docs = cus.documents ? cus.documents.split(',') : [];
@@ -90,10 +108,16 @@ exports.getCustomerDetails = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
+// ✅ Update
 // ✅ Update
 exports.updateCustomersDetails = async (req, res) => {
   try {
     const { customerId } = req.params;
+    const projectName = req.projectName; // ✅ Get project name
+    const projectId = req.projectId;
+
     const {
       customerName,
       customerPhone,
@@ -109,8 +133,11 @@ exports.updateCustomersDetails = async (req, res) => {
     } = req.body;
 
     const customer = await CustomerMaster.findOne({ where: { customerId } });
-    if (!customer) return res.status(404).json({ error: 'Customer not found' });
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
 
+    // ✅ Parse retained files
     let retainedFileKeys = [];
     try {
       retainedFileKeys = typeof retainedFiles === 'string' ? JSON.parse(retainedFiles) : [];
@@ -118,6 +145,7 @@ exports.updateCustomersDetails = async (req, res) => {
       return res.status(400).json({ error: 'Invalid retainedFiles format' });
     }
 
+    // ✅ Delete removed files from R2
     const oldDocs = customer.documents ? customer.documents.split(',') : [];
     const filesToDelete = oldDocs.filter(key => !retainedFileKeys.includes(key));
 
@@ -131,9 +159,15 @@ exports.updateCustomersDetails = async (req, res) => {
       }).promise();
     }
 
-    const files = req.files || [];
-    let newUploadedFiles = [];
+    // ✅ Handle new files
+    let files = [];
+    if (Array.isArray(req.files)) {
+      files = req.files;
+    } else if (typeof req.files === 'object' && req.files !== null) {
+      files = Object.values(req.files).flat();
+    }
 
+    let newUploadedFiles = [];
     if (files.length > 0) {
       let parsedDocTypes = [];
       try {
@@ -147,10 +181,14 @@ exports.updateCustomersDetails = async (req, res) => {
         documentType: parsedDocTypes[i] || 'unknown'
       }));
 
-      newUploadedFiles = await uploadToR2(filesWithDocTypes, "customer_master_edit", customerName);
+      newUploadedFiles = await uploadToR2(projectName, filesWithDocTypes, "customer_master_edit", customerName);
     }
 
-    const finalDocs = [...retainedFileKeys, ...newUploadedFiles.map(f => f.key)];
+    // ✅ Merge retained + new uploaded
+    const finalKeys = [
+      ...retainedFileKeys,
+      ...newUploadedFiles.map(f =>f.url.replace(/^public_url\s*=\s*/, ''))
+    ];
 
     await customer.update({
       customerName: customerName ?? customer.customerName,
@@ -162,10 +200,11 @@ exports.updateCustomersDetails = async (req, res) => {
       customerNo: customerNo ?? customer.customerNo,
       blockNo: blockNo ?? customer.blockNo,
       flatNo: flatNo ?? customer.flatNo,
-      documents: finalDocs.join(',')
+      documents: finalKeys.join(','),
+      projectId
     });
 
-    const allUrls = finalDocs.map(getR2FileUrl);
+    const allUrls = finalKeys.map(key => `${PUBLIC_R2_BASE_URL}/${key}`);
 
     res.status(200).json({
       message: 'Customer updated successfully',
@@ -173,9 +212,12 @@ exports.updateCustomersDetails = async (req, res) => {
       documentUrls: allUrls
     });
   } catch (err) {
+    console.error("Update error:", err);
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // ✅ Delete
 exports.deleteCustomersDetails = async (req, res) => {
@@ -206,16 +248,18 @@ exports.deleteCustomersDetails = async (req, res) => {
 
 
 
+//--------------------------------------------------------------------------------------------------------------
+
 exports.importCustomerFromExcel = async (req, res) => {
   try {
     const customers = req.body.customer;
-
+    const projectId = req.projectId
     if (!Array.isArray(customers) || customers.length === 0) {
       return res.status(400).json({ error: "No customer records provided." });
     }
 
     const requiredFields = ["customerName",
-      "customerPhone", "customerEmail","customerAddress","customerProfession","languagesKnown","flatNo"
+      "customerPhone", "customerEmail", "customerAddress", "customerProfession", "languagesKnown", "flatNo"
     ];
     const errors = [];
     const cleanedCustomers = [];
@@ -250,8 +294,9 @@ exports.importCustomerFromExcel = async (req, res) => {
           customerAddress: record.customerAddress || null,
           customerProfession: record.customerProfession || null,
           languagesKnown: record.languagesKnown || null,
-       
-          flatNo: record.flatNo || null
+
+          flatNo: record.flatNo || null,
+          projectId
         });
 
       } else {
@@ -277,16 +322,27 @@ exports.importCustomerFromExcel = async (req, res) => {
     });
 
   } catch (err) {
-    if (err instanceof ValidationError) {
-      const messages = err.errors.map((e) => e.message);
-      return res.status(400).json({ error: messages.join(', ') });
-    }
     console.error("Customer import error:", err);
-    res.status(500).json({ error: "Internal server error during customer import." });
+
+    // Check for duplicate email (PostgreSQL error code 23505)
+    if (err?.original?.code === '23505' && err?.original?.detail) {
+      return res.status(409).json({
+        message: "Duplicate entry found.",
+        detail: err.original.detail // e.g., 'Key ("customerEmail")=(xyz@gmail.com) already exists.'
+      });
+    }
+
+    // Default internal error
+    return res.status(500).json({
+      message: "Internal server error during customer import."
+    });
   }
+
 };
 
 
+
+//--------------------------------------------------------------------------------------------------------------
 
 // ✅ Get single customer for autofill
 exports.getCustomerById = async (req, res) => {
@@ -314,6 +370,8 @@ exports.getCustomerById = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // ✅ Get all leads
 exports.getLeadDetails = async (req, res) => {

@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const rolesController = require('../../controllers/updateControllers/rolesMasterController');
-const verifyToken = require('../../middleware/verfiyToken');
+const projectFilter = require('../../middleware/projectId');
 
-router.post('/', verifyToken,rolesController.createRoles);
-router.post('/import', verifyToken,rolesController.importRolesData);
-router.get('/', verifyToken,rolesController.getRoless);
-router.put('/:id', verifyToken,rolesController.updateRoles);
-router.delete('/:id', verifyToken,rolesController.deleteRoles);
+router.post('/', projectFilter,rolesController.createRoles);
+router.post('/import', projectFilter,rolesController.importRolesData);
+router.get('/', projectFilter,rolesController.getRoless);
+router.put('/:id', projectFilter,rolesController.updateRoles);
+router.delete('/:id', projectFilter,rolesController.deleteRoles);
 
 module.exports = router;

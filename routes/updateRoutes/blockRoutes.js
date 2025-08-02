@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const blocksController = require('../../controllers/updateControllers/blockMasterController');
-const verifyToken = require('../../middleware/verfiyToken')
+const projectFilter = require('../../middleware/projectId')
 
-router.post('/', verifyToken, blocksController.createBlock);
-router.post('/import', verifyToken, blocksController.importBlockFromExcel);
-router.get('/', verifyToken, blocksController.getBlocks);
-router.put('/:id', verifyToken, blocksController.updateBlock);
-router.delete('/:id', verifyToken, blocksController.deleteBlock);
+router.post('/', projectFilter, blocksController.createBlock);
+router.post('/import', projectFilter, blocksController.importBlockFromExcel);
+router.get('/', projectFilter, blocksController.getBlocks);
+router.put('/:id', projectFilter, blocksController.updateBlock);
+router.delete('/:id', projectFilter, blocksController.deleteBlock);
 
 module.exports = router;

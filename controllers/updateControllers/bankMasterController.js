@@ -1,13 +1,15 @@
 const BankMaster = require('../../models/updateModels/bankMasterSchema');
 const { ValidationError } = require('sequelize');
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Create
 exports.createBankDetails = async (req, res) => {
   try {
-    const userId = req.userId;
+    // const projectId = req.projectId;
     const { bankName, ifscCode, branch } = req.body;
   
-    const newBankDetails = await BankMaster.create({ bankName, ifscCode, branch });
+    const newBankDetails = await BankMaster.create({ bankName, ifscCode, branch,projectId });
     res.status(201).json(newBankDetails);
   } catch (err) {
     if (err instanceof ValidationError) {
@@ -18,16 +20,21 @@ exports.createBankDetails = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Read all
 exports.getBankDetails = async (req, res) => {
   try {
-    // const userId = req.userId;
+    // const projectId = req.projectId;
     const bankDetails = await BankMaster.findAll();
+    console.log(" ank details",bankDetails)
     res.json(bankDetails);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//--------------------------------------------------------------------------------------------------------------
 
 // Update
 exports.updateBankDetails = async (req, res) => {
@@ -49,6 +56,8 @@ exports.updateBankDetails = async (req, res) => {
   }
 };
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Delete
 exports.deleteBankDetails = async (req, res) => {
   try {
@@ -63,6 +72,8 @@ exports.deleteBankDetails = async (req, res) => {
 };
 
 
+//--------------------------------------------------------------------------------------------------------------
+
 // Excel serial date conversion
 function excelDateToJSDate(serial) {
   const excelEpoch = new Date(1899, 11, 30);
@@ -74,7 +85,7 @@ function excelDateToJSDate(serial) {
 exports.importBankFromExcel = async (req, res) => {
   try {
     const banks = req.body.banks;
-
+// const projectId = req.projectId
     if (!Array.isArray(banks) || banks.length === 0) {
       return res.status(400).json({ error: "No bank records provided." });
     }
@@ -127,7 +138,7 @@ exports.importBankFromExcel = async (req, res) => {
           bankName: String(record.bankName).trim(),
           ifscCode: String(record.ifscCode).trim(),
           branch: String(record.branch).trim(), // Changed from Number() to String()
-          // date: parsedDate, // Uncomment if date is used in your model
+        //  projectId
         });
       } else {
         errors.push(...rowErrors);

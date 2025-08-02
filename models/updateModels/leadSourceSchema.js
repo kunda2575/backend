@@ -13,7 +13,11 @@ const leadSource = sequelize.define(
             type:DataTypes.STRING,
             allowNUll:false
         },
-       
+        projectId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+
+        },
        
     },
     {
